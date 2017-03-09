@@ -27,13 +27,15 @@ The cherami-client-java library supports publishing/consuming from Cherami in sy
  client.createConsumerGroup(cgRequest);
  
  // Publish a message
- CheramiPublisher publisher = client.createPublisher(new CreatePublisherRequest.Builder(destinationPath).build());
+ CreatePublisherRequest pRequest = new CreatePublisherRequest.Builder(destinationPath).build()
+ CheramiPublisher publisher = client.createPublisher(pRequest);
  publisher.open();
  publisher.write(new PublisherMessage("hello".getBytes("UTF8")));
  publisher.close();
  
  // Consume a message
- CheramiConsumer consumer = client.createConsumer(new CreateConsumerRequest.Builder(destinationPath, consumerGroupName).build());
+ CreateConsumerRequest cRequest = new CreateConsumerRequest.Builder(destinationPath, consumerGroupName).build()
+ CheramiConsumer consumer = client.createConsumer(cRequest);
  consumer.open();
  CheramiDelivery delivery = consumer.read();
  System.out.println(new String(delivery.getMessage().getPayload().getData(), "UTF8"));
@@ -48,7 +50,7 @@ For details on how to use the library in an application, see the examples direct
 Build with `mvn clean package`
 
 ## Contributing to Cherami
-If you are interested in contributing to cheramim the best place to start would be this blog post [eng.uber.com/cherami](https://eng.uber.com/cherami/)
+If you are interested in contributing to cherami the best place to start would be this blog post [eng.uber.com/cherami](https://eng.uber.com/cherami/)
 
 **Note:** All contributors also need to fill out the [Uber Contributor License Agreement](http://t.uber.com/cla) before we can merge in any of your changes.
 
