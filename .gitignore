@@ -1,0 +1,10 @@
+/target/
+lib/target/
+lib/src/main/gen-java
+examples/target/
+.project
+.settings
+.classpath
+*.next
+*.releaseBackup
+*.tag
