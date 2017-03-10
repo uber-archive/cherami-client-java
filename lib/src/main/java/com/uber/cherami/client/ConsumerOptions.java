@@ -27,10 +27,19 @@ package com.uber.cherami.client;
  * @author venkat
  */
 public class ConsumerOptions {
-
+    /**
+     * Max number of messages to prefetch i.e. receive buffer size.
+     */
     public final int prefetchSize;
+    /** Connection keep alive, enabled or disabled. */
     public final boolean keepAlive;
 
+    /**
+     * Constructs and returns a ConsumerOptions object.
+     *
+     * @param prefetchSize
+     *            int representing the prefetchSize.
+     */
     public ConsumerOptions(int prefetchSize) {
         this.prefetchSize = prefetchSize;
         this.keepAlive = true;

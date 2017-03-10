@@ -100,7 +100,7 @@ public class MetricsReporter {
      *
      * @author venkat
      */
-    public static enum Counter {
+    public enum Counter {
         /** Number of publish message attempts */
         PUBLISHER_MESSAGES_OUT("cherami.publish.message.rate"),
         /** Number of publish message attempts that failed or timed out */
@@ -143,7 +143,7 @@ public class MetricsReporter {
      *
      * @author venkat
      */
-    public static enum Gauge {
+    public enum Gauge {
         /** Number of connections to inputhost. */
         PUBLSIHER_NUM_CONNS("cherami.publish.connections"),
         /** Number of connections to outputhosts. */
@@ -170,7 +170,7 @@ public class MetricsReporter {
      *
      * @author venkat
      */
-    public static enum Latency {
+    public enum Latency {
         /** Publish message latency. */
         PUBLISH_MESSAGE("cherami.publish.message.latency"),
         /** Latency for sendCredits. */

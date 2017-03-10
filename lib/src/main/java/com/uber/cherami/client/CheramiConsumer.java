@@ -21,7 +21,6 @@
  *******************************************************************************/
 package com.uber.cherami.client;
 
-
 import java.io.IOException;
 import java.util.concurrent.Future;
 

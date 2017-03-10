@@ -150,7 +150,7 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         CheramiFuture<CheramiDelivery> future = readAsync();
         try {
             return future.get();
-        } catch(ExecutionException e) {
+        } catch (ExecutionException e) {
             throw new IOException(e);
         }
     }
@@ -197,7 +197,6 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         DeliveryID id = result.getSecond();
         acknowledger.nack(id.getMessageAckID());
     }
-
 
     public boolean isOpen() {
         return isOpen.get();

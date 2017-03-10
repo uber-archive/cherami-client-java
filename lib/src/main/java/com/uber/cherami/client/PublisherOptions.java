@@ -27,12 +27,14 @@ package com.uber.cherami.client;
  * @author venkat
  */
 public class PublisherOptions {
-
+    /** Websocket connection keepalive, either or false. */
     public final boolean keepAlive;
+    /** Send buffer size in bytes. */
     public final long sndBufSizeBytes;
+    /** Write timeout in milliseconds. */
     public final long writeTimeoutMillis;
+    /** Max number inflight messages per connection. */
     public final int inFlightMsgsPerConn;
-
 
     /**
      * Creates and returns a PublisherOptions object.

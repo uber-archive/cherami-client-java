@@ -119,11 +119,12 @@
                     <configLocation>${checkstyle.dir}/uber_checks.xml</configLocation>
                     <violationSeverity>"warning"</violationSeverity>
                     <failOnViolation>true</failOnViolation>
-                    <!--  <failsOnError>true</failsOnError> -->
+                    <failsOnError>true</failsOnError>
+                    <consoleOutput>true</consoleOutput>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>verify-style</id>
+                        <id>check</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>check</goal>

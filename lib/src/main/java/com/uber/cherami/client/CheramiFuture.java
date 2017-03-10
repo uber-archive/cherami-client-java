@@ -30,7 +30,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Future that returns a result from cherami.
+ * Cherami implementation of Future interface.
+ *
+ * @param <T>
+ *            The result type held by this future.
  */
 public class CheramiFuture<T> implements Future<T> {
 

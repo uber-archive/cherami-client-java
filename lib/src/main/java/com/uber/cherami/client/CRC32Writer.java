@@ -25,10 +25,16 @@ import java.util.zip.CRC32;
 
 import com.uber.cherami.PutMessage;
 
+/**
+ * ChecksumWriter that writes CRC32 checksums to the payload.
+ */
 public class CRC32Writer extends ChecksumWriter {
 
     private final CRC32 crc32;
 
+    /**
+     * Constructor for CRC32Writer.
+     */
     public CRC32Writer() {
         this.crc32 = new CRC32();
     }

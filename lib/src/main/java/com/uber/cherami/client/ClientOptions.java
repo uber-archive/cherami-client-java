@@ -65,14 +65,16 @@ public class ClientOptions {
     }
 
     /**
-     * Constructs and returns a client options object.
-     * The deployment environment is set to staging,
-     * by default. Use the Builder to to change this.
+     * Constructs and returns a client options object. The deployment
+     * environment is set to staging, by default. Use the Builder to to change
+     * this.
+     *
+     * @deprecated This API is deprecated in favor the the builder.
      *
      * @param timeout
-     * 		rpc timeout value.
+     *            rpc timeout value.
      * @param timeUnit
-     * 		unit for the timeout value.
+     *            unit for the timeout value.
      */
     @Deprecated
     public ClientOptions(long timeout, TimeUnit timeUnit) {

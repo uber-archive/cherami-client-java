@@ -199,6 +199,12 @@ public class ConnectionManager<T extends Connection> implements Runnable {
         return this.stateRef.get().connections;
     }
 
+    /**
+     * Returns a map of address to connection object.
+     *
+     * @return Map<String,T> representing map of address to connection
+     * @throws ConnectionManagerClosedException
+     */
     public Map<String, T> getAddrToConnectionMap() throws ConnectionManagerClosedException {
         if (isClosed.get()) {
             throw new ConnectionManagerClosedException();
@@ -218,7 +224,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      *
      * @author venkat
      */
-    public static interface EndpointFinder {
+    public interface EndpointFinder {
         /**
          * @return List of host addresses to connect to.
          * @throws IOException
@@ -233,7 +239,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      *
      * @author venkat
      */
-    public static interface Connection {
+    public interface Connection {
         /**
          * @return True if the conn is open, false otherwise.
          */
@@ -250,8 +256,9 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      * @author venkat
      */
     public static class EndpointsInfo {
-
+        /** Type of checksum, examples are crc32, md5. */
         public final ChecksumOption checksumOption;
+        /** List of ip:port host addresses. */
         public final List<HostAddress> hostAddrs;
 
         /**
@@ -284,7 +291,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      *
      * @param <T>
      */
-    public static interface ConnectionFactory<T extends Connection> {
+    public interface ConnectionFactory<T extends Connection> {
         /**
          * Creates and returns a new connection.
          *
@@ -434,7 +441,8 @@ public class ConnectionManager<T extends Connection> implements Runnable {
                         State<T> newState = new State<T>(allAddrs, addrToConns, checksumOption);
                         this.stateRef.set(newState);
                     }
-                    futures.set(i, null); // null out the completed futures
+                    // null out the completed futures
+                    futures.set(i, null);
                     remaining--;
                 } catch (TimeoutException | InterruptedException e) {
                     continue;
@@ -541,7 +549,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
         private final ChecksumOption checksumOption;
         private final ConnectionFactory<T> factory;
 
-        public Connector(String addr, ChecksumOption checksumOption, ConnectionFactory<T> factory) {
+        Connector(String addr, ChecksumOption checksumOption, ConnectionFactory<T> factory) {
             this.addr = addr;
             this.checksumOption = checksumOption;
             this.factory = factory;
@@ -580,14 +588,14 @@ public class ConnectionManager<T extends Connection> implements Runnable {
         public final ChecksumOption checksumOption;
         public final Map<String, T> addrToConnection;
 
-        public State() {
+        State() {
             this.addrs = new HashSet<String>(4);
             this.addrToConnection = new HashMap<String, T>(4);
             this.connections = new ArrayList<T>();
             this.checksumOption = ChecksumOption.CRC32IEEE;
         }
 
-        public State(Set<String> addrs, Map<String, T> addrToConnection, ChecksumOption checksumOption) {
+        State(Set<String> addrs, Map<String, T> addrToConnection, ChecksumOption checksumOption) {
             this.addrs = addrs;
             this.checksumOption = checksumOption;
             this.addrToConnection = addrToConnection;

@@ -26,9 +26,15 @@ import java.security.NoSuchAlgorithmException;
 
 import com.uber.cherami.PutMessage;
 
+/**
+ * ChecksumWriter that writes MD5 checksums to the payload.
+ */
 public class MD5Writer extends ChecksumWriter {
     private final MessageDigest md5;
 
+    /**
+     * Constructor for MD5Writer.
+     */
     public MD5Writer() {
         try {
             this.md5 = MessageDigest.getInstance("MD5");

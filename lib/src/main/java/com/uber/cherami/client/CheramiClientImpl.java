@@ -107,7 +107,7 @@ public class CheramiClientImpl implements CheramiClient {
         private static final WebSocketClient wsClient = new WebSocketClient();
     }
 
-    private final Logger logger = LoggerFactory.getLogger(CheramiClientImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(CheramiClientImpl.class);
 
     private static final int DEFAULT_PAGE_SIZE = 1000;
     private static final String FRONTEND_SERVICE_NAME = "cherami-frontendhost";

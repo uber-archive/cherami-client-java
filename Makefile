@@ -10,7 +10,7 @@ install_ci:
 
 .PHONY: test_ci
 test_ci:
-	mvn test -B
+	mvn verify -B
 
 .PHONY: cover_ci
 cover_ci:

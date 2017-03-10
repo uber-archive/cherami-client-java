@@ -71,6 +71,9 @@ public class CreateConsumerRequest {
         return prefetchCount;
     }
 
+    /**
+     * Builder for CreateConsumerRequest type.
+     */
     public static class Builder {
         private final String path;
         private final String consumerGroupName;

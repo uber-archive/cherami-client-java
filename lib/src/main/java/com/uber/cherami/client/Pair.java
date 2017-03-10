@@ -22,40 +22,46 @@
 package com.uber.cherami.client;
 
 /**
- * Pair represents a two element tuple.
- * Immutable and thread safe.
+ * Pair represents a two element tuple. Immutable and thread safe.
+ *
+ * @param <F>
+ *            Type of first element.
+ * @param <S>
+ *            Type of second element.
+ *
+ * @author venkat
  */
-public class Pair<F,S> {
+public final class Pair<F, S> {
 
-	/** first element in the tuple */
-	private final F first;
-	/** second element in the tuple */
-	private final S second;
+    /** first element in the tuple */
+    private final F first;
+    /** second element in the tuple */
+    private final S second;
 
-	/** 
-	 * Creates and returns a Pair object 
-	 *
-	 * @param first
-	 *     First element of tuple, type F
-	 * @param second
-	 *     Second element of tuple, type S
-	 */
-	public Pair(F first, S second) {
-		this.first = first;
-		this.second = second;
-	}
+    /**
+     * Creates and returns a Pair object
+     *
+     * @param first
+     *            First element of tuple, type F
+     * @param second
+     *            Second element of tuple, type S
+     */
+    public Pair(F first, S second) {
+        this.first = first;
+        this.second = second;
+    }
 
-	/**
-	 * Returns the first element.
-	 */
-	public F getFirst() {
-		return this.first;
-	}
+    /**
+     * Returns the first element.
+     */
+    public F getFirst() {
+        return this.first;
+    }
 
-	/**
-	 * Returns the second element.
-	 */
-	public S getSecond() {
-		return this.second;
-	}
+    /**
+     * Returns the second element.
+     */
+    public S getSecond() {
+        return this.second;
+    }
 }

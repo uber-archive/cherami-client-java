@@ -64,7 +64,7 @@ import com.uber.tchannel.messages.ThriftResponse;
  */
 public class OutputHostConnection implements WebsocketConnection, Connection, CheramiAcknowledger {
 
-    private final Logger logger = LoggerFactory.getLogger(OutputHostConnection.class);
+    private static final Logger logger = LoggerFactory.getLogger(OutputHostConnection.class);
 
     private static final String THRIFT_INTERFACE_NAME = "BOut";
     private static final String OUTPUT_SERVICE_NAME = "cherami-outputhost";
@@ -169,6 +169,14 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
         }
     }
 
+    /**
+     * Opens a connection to the output host.
+     *
+     * @throws IOException
+     *             On an I/O error
+     * @throws InterruptedException
+     *             If the thread is interrupted
+     */
     public synchronized void open() throws IOException, InterruptedException {
         if (!isOpen()) {
             try {
@@ -286,6 +294,10 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
      */
     private class ReadMessagesPump implements Runnable {
 
+        private static final long BACKOFF_INTERVAL_MILLIS = 1000;
+        private static final long MSGQ_POLL_TIMEOUT_MILLIS = 1000;
+        private static final long DELIVERY_Q_POLL_TIME_MILLIS = 100;
+
         private final CountDownLatch quitter = new CountDownLatch(1);
         private final CheramiAcknowledger acknowledger;
         private final Random random = new Random();
@@ -293,11 +305,7 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
         private boolean prevSendCreditsFailed = false;
         private long nextSendCreditsTime = System.currentTimeMillis();
 
-        private static final long BACKOFF_INTERVAL_MILLIS = 1000;
-        private static final long MSGQ_POLL_TIMEOUT_MILLIS = 1000;
-        private static final long DELIVERY_Q_POLL_TIME_MILLIS = 100;
-
-        public ReadMessagesPump(CheramiAcknowledger acknowledger) {
+        ReadMessagesPump(CheramiAcknowledger acknowledger) {
             this.acknowledger = acknowledger;
         }
 
@@ -341,7 +349,7 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
                 }
             }
         }
-        
+
         private void blockUntilDeliveryQueueFull() {
             while ((options.prefetchSize == msgDeliveryQueue.size()) && quitter.getCount() > 0) {
                 try {
@@ -362,7 +370,6 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
             try {
                 while (quitter.getCount() > 0) {
                     try {
-                        
                         // If the prefetch buffer is full, that
                         // indicates application isn't keeping with the
                         // consumption rate. No point in granting
@@ -372,7 +379,7 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
                         if (quitter.getCount() <= 0) {
                             return;
                         }
-                        
+
                         if (localCredits >= creditBatchSize && isAllowSendCredits()) {
                             try {
                                 metricsReporter.report(Counter.CONSUMER_CREDITS_OUT, localCredits);
@@ -477,8 +484,11 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
                 builder.setTimeout(SEND_ACK_TIMEOUT_MILLIS);
                 builder.setBody(new ackMessages_args(ackRequest));
 
-                // We need to specify the specific host port to send the acks to because all outputHostConnections use the same subChannel object,
-                // so the subChannel contains peers for all outputHostConnections. Throws TChannelError if the message cannot be sent
+                // We need to specify the specific host port to send the acks to
+                // because all outputHostConnections use the same subChannel
+                // object, so the subChannel contains peers for all
+                // outputHostConnections. Throws TChannelError if the message
+                // cannot be sent
                 ListenableFuture<ThriftResponse<ackMessages_result>> future = subChannel.send(builder.build(),
                         remoteInetAddr, remotePort);
                 response = future.get();

@@ -134,7 +134,7 @@ public class SendReceipt {
      *
      * @author venkat
      */
-    public static enum ReceiptStatus {
+    public enum ReceiptStatus {
         /** Successfully published. */
         OK,
         /** Client or server timeout. */

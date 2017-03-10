@@ -23,20 +23,45 @@ package com.uber.cherami.example;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Value type that keeps track of in-memory metrics.
+ *
+ * @author venkat
+ */
 public class Stats {
-
+    /** Total number of messages published. */
     public AtomicLong messagesOutCount = new AtomicLong();
+
+    /** Total number of bytes published. */
     public AtomicLong bytesOutCount = new AtomicLong();
+
+    /** Total number of messages consumed. */
     public AtomicLong messagesInCount = new AtomicLong();
+
+    /** Total number of duplicate messages consumed. */
     public AtomicLong messagesInDupCount = new AtomicLong();
+
+    /** Total number of bytes consumed. */
     public AtomicLong bytesInCount = new AtomicLong();
+
+    /** Total number of publish errors. */
     public AtomicLong messagesOutErrCount = new AtomicLong();
+
+    /** Total number of messages throttled by server. */
     public AtomicLong messagesOutThrottledCount = new AtomicLong();
 
+    /** Time taken to publish a message. */
     public final Latency writeLatency = new Latency();
+
+    /** Time taken to consume a message. */
     public final Latency readLatency = new Latency();
+
+    /** Total time taken for publishing all the messages. */
     public final Latency totalPublishLatency = new Latency();
 
+    /**
+     * Prints out the metric values to stdout.
+     */
     public void print() {
         System.out.println("\n-------METRICS------------");
         System.out.println("messagesOut:              " + messagesOutCount.get());
@@ -82,6 +107,11 @@ public class Stats {
         return (messagesInCount.get() / readLatency.sum) * 1000;
     }
 
+    /**
+     * Represents a latency profile.
+     *
+     * @author venkat
+     */
     public static class Latency {
 
         private long count;
@@ -89,6 +119,12 @@ public class Stats {
         private long sum;
         private long min = Long.MAX_VALUE;
 
+        /**
+         * adds a sample to the profile.
+         *
+         * @param value
+         *            long representing the latency
+         */
         public synchronized void add(long value) {
             count++;
             sum += value;
@@ -99,10 +135,16 @@ public class Stats {
             }
         }
 
+        /**
+         * @return Returns the average of all the samples
+         */
         public long avg() {
             return (count == 0) ? 0 : (sum / count);
         }
 
+        /**
+         * @return Returns the minimum of all the sample values.
+         */
         public long min() {
             return (min == Long.MAX_VALUE) ? 0 : min;
         }

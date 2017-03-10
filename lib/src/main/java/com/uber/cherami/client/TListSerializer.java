@@ -37,8 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An object that takes a list of objects and serializes them into a byte array according to the specified protocol
- * Note that this implementation is NOT thread-safe
+ * An object that takes a list of objects and serializes them into a byte array
+ * according to the specified protocol. This implementation is NOT thread-safe
+ *
+ * @param <T>
+ *            Type of the object being serialized.
  */
 public class TListSerializer<T extends TBase<?, ?>> {
     private final Logger logger = LoggerFactory.getLogger(TListSerializer.class);
@@ -59,6 +62,12 @@ public class TListSerializer<T extends TBase<?, ?>> {
         this(new TBinaryProtocol.Factory());
     }
 
+    /**
+     * Constructor for TListSerializer.
+     *
+     * @param protocolFactory
+     *            TProtocolFactory
+     */
     public TListSerializer(TProtocolFactory protocolFactory) {
         this.outputStream = new ByteArrayOutputStream();
         this.transport = new TIOStreamTransport(outputStream);

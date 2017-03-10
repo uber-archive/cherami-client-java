@@ -65,6 +65,14 @@ public class CheramiExecutor implements Runnable {
         this.stoppedLatch = new CountDownLatch(1);
     }
 
+    /**
+     * Stops the executor.
+     *
+     * @param awaitTime
+     *            Amount of time to wait for the underlying threads to stop.
+     * @param timeUnit
+     *            TimeUnit for awaitTime.
+     */
     public void stop(long awaitTime, TimeUnit timeUnit) {
         try {
             quitter.countDown();
@@ -129,7 +137,7 @@ public class CheramiExecutor implements Runnable {
         private final CheramiDelivery delivery;
         private final MessageHandler handler;
 
-        public MessageHandlerRunnable(CheramiDelivery delivery, MessageHandler handler) {
+        MessageHandlerRunnable(CheramiDelivery delivery, MessageHandler handler) {
             this.delivery = delivery;
             this.handler = handler;
         }
@@ -142,7 +150,8 @@ public class CheramiExecutor implements Runnable {
                     return;
                 }
             } catch (Throwable e) {
-                logger.error("Error from MessageHandler for message with delivery token {}", delivery.getDeliveryToken(), e);
+                logger.error("Error from MessageHandler for message with delivery token {}",
+                        delivery.getDeliveryToken(), e);
             }
             delivery.nack();
         }

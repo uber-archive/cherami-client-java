@@ -60,7 +60,10 @@
         </module>
 
         <!-- Indentation -->
-        <module name="Indentation"/>
+        <module name="Indentation">
+        <property name="caseIndent" value="0"/>
+        </module>
+        
         <module name="OperatorWrap"/>
 
         <!-- Curly braces -->
@@ -71,7 +74,7 @@
         <module name="RightCurly"/>
 
         <!-- Order -->
-        <module name="InnerTypeLast"/>
+         <!-- <module name="InnerTypeLast"/> -->
         <module name="DeclarationOrder"/>
         <module name="ModifierOrder"/>
         <module name="RedundantModifier"/>
@@ -132,6 +135,9 @@
         <module name="OneStatementPerLine"/>
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9_]*$"/>
+        </module>
 
         <!-- Clone -->
         <module name="NoClone"/>
@@ -139,10 +145,33 @@
         <module name="SuperClone"/>
 
         <!-- Block and Statement -->
-        <module name="NestedTryDepth"/>
+        <module name="NestedTryDepth">
+            <property name="max" value="3"/>
+        </module>
+        
         <module name="AvoidNestedBlocks"/>
         <module name="EmptyStatement"/>
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
+        
+        <!--  JavaDoc -->
+        <module name="JavadocMethod">
+            <property name="scope" value="public"/>
+            <property name="allowMissingParamTags" value="true"/>
+            <property name="allowMissingThrowsTags" value="true"/>
+            <property name="allowMissingReturnTag" value="true"/>
+            <property name="minLineCount" value="2"/>
+            <property name="allowedAnnotations" value="Override, Test"/>
+            <property name="allowThrowsTagsForSubclasses" value="true"/>
+        </module>
+        
+        <module name="JavadocType">
+            <property name="scope" value="public"/>
+        </module>
+        
+        <module name="JavadocVariable">
+            <property name="scope" value="public"/>
+        </module>
+        
     </module>
 </module>

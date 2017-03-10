@@ -35,8 +35,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An object that takes a byte array of serialized messages and deserializes them into a list of Thrift objects
- * Note that this implementation is NOT thread-safe
+ * An object that takes a byte array of serialized messages and deserializes
+ * them into a list of Thrift objects. This implementation is NOT thread-safe.
+ *
+ * @param <T>
+ *            Type of the object being deserialized.
  */
 public class TListDeserializer<T extends TBase<?, ?>> {
     private final Logger logger = LoggerFactory.getLogger(TListDeserializer.class);

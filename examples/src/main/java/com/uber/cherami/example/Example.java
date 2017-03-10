@@ -60,6 +60,12 @@ public class Example {
     private final CheramiClient client;
     private final AtomicBoolean isClosed;
 
+    /**
+     * Constructs an Example object.
+     *
+     * @param config
+     *            Config representing the run configuration.
+     */
     public Example(Config config) {
         this.config = config;
         this.client = buildClient(config);
@@ -146,7 +152,7 @@ public class Example {
 
         public final long id;
 
-        public InFlightMsgState(long id, Future<SendReceipt> future, int attempts) {
+        InFlightMsgState(long id, Future<SendReceipt> future, int attempts) {
             this.id = id;
             this.future = future;
             this.attempts = attempts;
@@ -161,6 +167,9 @@ public class Example {
         return new PublisherMessage(data.serialize());
     }
 
+    /**
+     * Runs the publisher and consumer.
+     */
     public void run() throws Exception {
 
         doSetup();
@@ -222,7 +231,8 @@ public class Example {
                 }
 
                 if (retryMsgId == 0 && remaining == 0) {
-                    continue; // no new or old messages to re-send
+                    // no new or old messages to re-send
+                    continue;
                 }
 
                 long msgId = retryMsgId != 0 ? retryMsgId : msgCounter.incrementAndGet();

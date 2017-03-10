@@ -50,12 +50,23 @@ public class CheramiClientSocket {
     private Session session;
     private ScheduledExecutorService exec;
 
+    /**
+     * Constructor for CheramiClientSocket.
+     *
+     * @param connection
+     *            WebSocketConnection object.
+     * @param keepAlive
+     *            True if keepAlive must be enabled.
+     */
     public CheramiClientSocket(WebsocketConnection connection, boolean keepAlive) {
         this.connection = connection;
         this.keepAlive = keepAlive;
         countDownLatch = new CountDownLatch(1);
     }
 
+    /**
+     * Callback that gets invoked when the underlying connection is established.
+     */
     @OnWebSocketConnect
     public void onConnect(final Session session) {
         logger.info("Connected to server {}", session.getRemoteAddress());
@@ -94,6 +105,9 @@ public class CheramiClientSocket {
         connection.receiveMessage(input);
     }
 
+    /**
+     * Callback that's invoked when the underlying connection is closed.
+     */
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
         try {

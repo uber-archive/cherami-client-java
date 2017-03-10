@@ -72,16 +72,25 @@ public class CreatePublisherRequest {
         return writeTimeoutMillis;
     }
 
+    /**
+     * Builder for CreatePublisherRequest type.
+     */
     public static class Builder {
         private final String path;
         private int messagesPerConnection = DEFAULT_INFLIGHT_MESSAGES;
         private long bufferSizeBytes = DEFAULT_BUFFER_SIZE_BYTES;
         private long writeTimeoutMillis = DEFAULT_WRITE_TIMEOUT_MILLIS;
 
+        /**
+         * Constructor for Builder.
+         */
         public Builder(String path) {
             this.path = path;
         }
 
+        /**
+         * Sets keepAlive to true or false.
+         */
         public Builder setKeepAlive(boolean keepAlive) {
             // no-op on purpose, this option shouldn't
             // be exposed, but it is. Need to work
@@ -90,21 +99,33 @@ public class CreatePublisherRequest {
             return this;
         }
 
+        /**
+         * Setter for messagesPerConnection.
+         */
         public Builder setMessagesPerConnection(int messagesPerConnection) {
             this.messagesPerConnection = messagesPerConnection;
             return this;
         }
 
+        /**
+         * Setter for bufferSizeBytes.
+         */
         public Builder setBufferSizeBytes(long bufferSizeBytes) {
             this.bufferSizeBytes = bufferSizeBytes;
             return this;
         }
 
+        /**
+         * Setter for writeTimeoutMillis.
+         */
         public Builder setWriteTimeoutMillis(long writeTimeoutMillis) {
             this.writeTimeoutMillis = writeTimeoutMillis;
             return this;
         }
 
+        /**
+         * Builds and returns a CreatePublisherRequest.
+         */
         public CreatePublisherRequest build() {
             return new CreatePublisherRequest(path, messagesPerConnection, bufferSizeBytes,
                     writeTimeoutMillis);

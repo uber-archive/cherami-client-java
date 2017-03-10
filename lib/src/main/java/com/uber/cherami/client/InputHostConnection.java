@@ -96,7 +96,6 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     private final ChecksumWriter checksumWriter;
     private final MetricsReporter metricsReporter;
 
-
     /**
      * Create an InputHostConnection.
      *
@@ -133,6 +132,14 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
         this.metricsReporter = reporter;
     }
 
+    /**
+     * Opens the connection to input host.
+     *
+     * @throws IOException
+     *             On an I/O error.
+     * @throws InterruptedException
+     *             If the thread is interrupted.
+     */
     public synchronized void open() throws IOException, InterruptedException {
         try {
             ClientUpgradeRequest request = new ClientUpgradeRequest();
@@ -188,7 +195,8 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                     metricsReporter.report(Counter.PUBLISHER_ACKS_IN, 1L);
                 } else if (command.getType() == InputHostCommandType.RECONFIGURE) {
                     metricsReporter.report(Counter.PUBLISHER_RECONFIGS, 1L);
-                    logger.debug("ReconfigID: {}. Reconfiguration command received from InputHost.", command.getReconfigure().getUpdateUUID());
+                    logger.debug("ReconfigID: {}. Reconfiguration command received from InputHost.",
+                            command.getReconfigure().getUpdateUUID());
                     reconfigurable.refreshNow();
                 }
             }

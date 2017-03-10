@@ -25,13 +25,26 @@ import static java.lang.System.exit;
 
 import java.util.Random;
 
+/**
+ * Immutable value type that containing the configuration for the cherami
+ * publisher / consumer.
+ *
+ * @author venkat
+ */
 public class Config {
+    /** Number of messages to send. */
     public final int numMessagesToSend;
+    /** Maximum number of messages to receive. */
     public final int maxNumberToReceive;
+    /** Size of the published messages. */
     public final int messageSize;
+    /** Cherami destination path. */
     public final String destinationPath;
+    /** Cherami consumer group name. */
     public final String consumerName;
+    /** Cherami server endpoint ip. */
     public final String ip;
+    /** Cherami server endpoint port. */
     public final int port;
 
     Config(int numMessages, int numToReceive, int messageSize, String consumerName, String path,
@@ -47,7 +60,8 @@ public class Config {
 
     private static void printHelp() {
         System.out.println(
-                "Usage: java com.uber.cherami.example.Example --nMsgsToSend=[nMsgsToSend] --msgSize=[msgSize] [ --nMsgsToReceive=[nMsgsToReceive] ]  [--endpoint=[frontEndIP:Port] ]");
+                "Usage: java com.uber.cherami.example.Example " + "--nMsgsToSend=[nMsgsToSend] --msgSize=[msgSize] "
+                        + "[ --nMsgsToReceive=[nMsgsToReceive] ]  [--endpoint=[frontEndIP:Port] ]");
     }
 
     private static void parseError(String arg) {
@@ -56,6 +70,13 @@ public class Config {
         exit(1);
     }
 
+    /**
+     * Parses the given commandline args and converts them into a Config object.
+     *
+     * @param args
+     *            String array, representing the command line args
+     * @return Config object, on success.
+     */
     public static Config parse(String[] args) {
 
         if (args.length < 2) {
