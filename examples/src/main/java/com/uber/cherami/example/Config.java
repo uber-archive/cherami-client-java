@@ -26,42 +26,52 @@ import static java.lang.System.exit;
 import java.util.Random;
 
 /**
- * Immutable value type that containing the configuration for the cherami
- * publisher / consumer.
+ * Immutable value type containing the configuration for the demo.
  *
  * @author venkat
  */
 public class Config {
-    /** Number of messages to send. */
-    public final int numMessagesToSend;
-    /** Maximum number of messages to receive. */
-    public final int maxNumberToReceive;
-    /** Size of the published messages. */
-    public final int messageSize;
-    /** Cherami destination path. */
-    public final String destinationPath;
-    /** Cherami consumer group name. */
-    public final String consumerName;
+
     /** Cherami server endpoint ip. */
     public final String ip;
     /** Cherami server endpoint port. */
     public final int port;
 
-    Config(int numMessages, int numToReceive, int messageSize, String consumerName, String path,
-            String ip, int port) {
-        this.numMessagesToSend = numMessages;
-        this.maxNumberToReceive = numToReceive;
-        this.messageSize = messageSize;
-        this.consumerName = consumerName;
-        this.destinationPath = path;
-        this.port = port;
+    /** Cherami destination path. */
+    public final String destinationPath;
+    /** Cherami consumer group name. */
+    public final String consumergroupName;
+
+    /** Number of publishers. */
+    public final int nPublishers;
+    /** Number of consumers. */
+    public final int nConsumers;
+
+    /** Number of messages to send. */
+    public final int nMessagesToSend;
+    /** Size of the published messages. */
+    public final int messageSize;
+
+    /** True for async publish/consume. */
+    public final boolean useAsync;
+
+    Config(String ip, int port, String dstPath, String cgName, int nPublishers, int nConsumers, int nMessagesToSend,
+            int messageSize, boolean useAsync) {
         this.ip = ip;
+        this.port = port;
+        this.destinationPath = dstPath;
+        this.consumergroupName = cgName;
+        this.nPublishers = nPublishers;
+        this.nConsumers = nConsumers;
+        this.nMessagesToSend = nMessagesToSend / nPublishers;
+        this.messageSize = messageSize;
+        this.useAsync = useAsync;
     }
 
     private static void printHelp() {
-        System.out.println(
-                "Usage: java com.uber.cherami.example.Example " + "--nMsgsToSend=[nMsgsToSend] --msgSize=[msgSize] "
-                        + "[ --nMsgsToReceive=[nMsgsToReceive] ]  [--endpoint=[frontEndIP:Port] ]");
+        System.out.println("Usage: java com.uber.cherami.example.Demo --nMsgsToSend=[nMsgsToSend] --msgSize=[msgSize] "
+                        + "[--endpoint=[frontEndIP:Port] ] [ --nPublishers=[nPublishers] ] "
+                        + "[ --nConsumers=[nConsumers] ] [ --useAsync=true ]");
     }
 
     private static void parseError(String arg) {
@@ -84,9 +94,12 @@ public class Config {
         }
 
         int send = 0;
-        int receive = 0;
         int size = 0;
         int port = 0;
+        int nPublishers = 1;
+        int nConsumers = 1;
+        boolean useAsync = false;
+
         String ip = "";
 
         try {
@@ -101,11 +114,17 @@ public class Config {
                 case "--nMsgsToSend":
                     send = Integer.parseInt(nameValue[1]);
                     break;
-                case "--nMsgsToReceive":
-                    receive = Integer.parseInt(nameValue[1]);
-                    break;
                 case "--msgSize":
                     size = Integer.parseInt(nameValue[1]);
+                    break;
+                case "--nPublishers":
+                    nPublishers = Integer.parseInt(nameValue[1]);
+                    break;
+                case "--nConsumers":
+                    nConsumers = Integer.parseInt(nameValue[1]);
+                    break;
+                case "--useAsync":
+                    useAsync = true;
                     break;
                 case "--endpoint":
                     String[] ipPort = nameValue[1].split(":");
@@ -124,12 +143,12 @@ public class Config {
         }
 
         if (send == 0 || size == 0) {
-            parseError("--send and --size must be greater than zero");
+            parseError("--nMsgsToSend and --msgSize must be greater than zero");
         }
 
-        String destinationPath = String.format("/test/java.example_%d", new Random().nextInt(Integer.MAX_VALUE));
-        String consumerName = String.format("%s_reader", destinationPath);
+        String dstPath = String.format("/test/java.example_%d", new Random().nextInt(Integer.MAX_VALUE));
+        String cgName = String.format("%s_reader", dstPath);
 
-        return new Config(send, receive, size, consumerName, destinationPath, ip, port);
+        return new Config(ip, port, dstPath, cgName, nPublishers, nConsumers, send, size, useAsync);
     }
 }

@@ -56,13 +56,10 @@ public class Stats {
     /** Time taken to consume a message. */
     public final Latency readLatency = new Latency();
 
-    /** Total time taken for publishing all the messages. */
-    public final Latency totalPublishLatency = new Latency();
-
     /**
      * Prints out the metric values to stdout.
      */
-    public void print() {
+    public void print(long totalReportedTimeMillis) {
         System.out.println("\n-------METRICS------------");
         System.out.println("messagesOut:              " + messagesOutCount.get());
         System.out.println("bytesOut:                 " + bytesOutCount.get());
@@ -71,40 +68,28 @@ public class Stats {
         System.out.println("messagesIn:               " + messagesInCount.get());
         System.out.println("messagesInDups:           " + messagesInDupCount.get());
         System.out.println("bytesIn:                  " + bytesInCount.get());
-        System.out.println("publisherMsgThroughput:   " + writeMsgThroughput() + " msgs/sec");
-        System.out.println("publisherBytesThroughput: " + writeBytesThroughput() + " bytes/sec");
-        System.out.println("consumerMsgThroughput:    " + readMsgThroughput() + " msgs/sec");
-        System.out.println("consumerBytesThroughput:  " + readBytesThroughput() + " bytes/sec");
+        System.out.println("publisherMsgThroughput:   " + writeMsgThroughput(totalReportedTimeMillis) + " msgs/sec");
+        System.out.println("publisherBytesThroughput: " + writeBytesThroughput(totalReportedTimeMillis) + " bytes/sec");
+        System.out.println("consumerMsgThroughput:    " + readMsgThroughput(totalReportedTimeMillis) + " msgs/sec");
+        System.out.println("consumerBytesThroughput:  " + readBytesThroughput(totalReportedTimeMillis) + " bytes/sec");
         System.out.println("publishLatency (ms):      " + writeLatency);
         System.out.println("consumeLatency (ms):      " + readLatency);
     }
 
-    private long writeBytesThroughput() {
-        if (totalPublishLatency.sum == 0) {
-            return 0;
-        }
-        return (bytesOutCount.get() / totalPublishLatency.sum) * 1000;
+    private long writeBytesThroughput(long totalReportedTimeMillis) {
+        return (bytesOutCount.get() / totalReportedTimeMillis) * 1000;
     }
 
-    private long writeMsgThroughput() {
-        if (totalPublishLatency.sum == 0) {
-            return 0;
-        }
-        return (messagesOutCount.get() / totalPublishLatency.sum) * 1000;
+    private long writeMsgThroughput(long totalReportedTimeMillis) {
+        return (messagesOutCount.get() / totalReportedTimeMillis) * 1000;
     }
 
-    private long readBytesThroughput() {
-        if (readLatency.sum == 0) {
-            return 0;
-        }
-        return (bytesInCount.get() / readLatency.sum) * 1000;
+    private long readBytesThroughput(long totalReportedTimeMillis) {
+        return (bytesInCount.get() / totalReportedTimeMillis) * 1000;
     }
 
-    private long readMsgThroughput() {
-        if (readLatency.sum == 0) {
-            return 0;
-        }
-        return (messagesInCount.get() / readLatency.sum) * 1000;
+    private long readMsgThroughput(long totalReportedTimeMillis) {
+        return (messagesInCount.get() / totalReportedTimeMillis) * 1000;
     }
 
     /**
@@ -152,6 +137,29 @@ public class Stats {
         @Override
         public String toString() {
             return "sum:" + sum + ",avg:" + avg() + ",min:" + min() + ",max:" + max;
+        }
+    }
+
+    /**
+     * Measures elapsed time on an operation.
+     *
+     * @author venkat
+     */
+    public static class Profiler {
+        private long startTimeMillis;
+
+        /**
+         * Starts the profiler, resets if previously started.
+         */
+        public void start() {
+            this.startTimeMillis = System.currentTimeMillis();
+        }
+
+        /**
+         * @return Returns the elapsed time in millis from start.
+         */
+        public long elapsed() {
+            return System.currentTimeMillis() - startTimeMillis;
         }
     }
 }
