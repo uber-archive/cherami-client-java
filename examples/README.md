@@ -2,6 +2,7 @@
 mvn clean package 
 
 ## Running the example
+```
 java -jar target/cherami-client-java-example.jar --help
 ParseError: Not enough arguments
 Usage: java com.uber.cherami.example.Demo
@@ -12,8 +13,10 @@ Usage: java com.uber.cherami.example.Demo
     --nConsumers=[nConsumers]      Number of consumer threads, optional
     --useAsync=[true]              Use async api, defaults to sync api
     --help                         Prints this message
+```
 
 ## Example Run
+```
 java -jar cherami-client-java-example.jar --endpoint=127.0.0.1:4922 --nMsgsToSend=10000 --msgSize=1024 --useAsync=true
 
 Created Destination:
@@ -42,4 +45,4 @@ publishLatency (ms):      sum:3049339,avg:193,min:75,max:418
 consumeLatency (ms):      sum:888,avg:0,min:0,max:75
 Deleted ConsumerGroup /test/java.example_1872280763_reader
 Deleted Destination /test/java.example_1872280763
-
+```
