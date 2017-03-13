@@ -69,9 +69,14 @@ public class Config {
     }
 
     private static void printHelp() {
-        System.out.println("Usage: java com.uber.cherami.example.Demo --nMsgsToSend=[nMsgsToSend] --msgSize=[msgSize] "
-                        + "[--endpoint=[frontEndIP:Port] ] [ --nPublishers=[nPublishers] ] "
-                        + "[ --nConsumers=[nConsumers] ] [ --useAsync=true ]");
+        System.out.println("Usage: java com.uber.cherami.example.Demo\n"
+                + "\t--endpoint=[frontEndIP:Port]   Cherami server ip address and port number\n"
+                + "\t--nMsgsToSend=[nMsgsToSend]    Total number of messages to publish\n"
+                + "\t--msgSize=[msgSize]            Size of each published message\n"
+                + "\t--nPublishers=[nPublishers]    Number of publisher threads, optional\n"
+                + "\t--nConsumers=[nConsumers]      Number of consumer threads, optional\n"
+                + "\t--useAsync=[true]              Use async api, defaults to sync api\n"
+                + "\t--help                         Prints this message");
     }
 
     private static void parseError(String arg) {
