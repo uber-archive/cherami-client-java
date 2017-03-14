@@ -55,25 +55,20 @@ public class MockFrontendService {
     /**
      * A Map to hold consumerGroup key-value pairs. Used as a way to store values in between calls (i.e. creation and deletion).
      */
-    private static HashMap<String, String> consumerGroupMap;
+    private static final HashMap<String, String> consumerGroupMap = new HashMap<String, String>();
     /**
      * A Map to hold destination key-value pairs. Used as a way to store values in between calls (i.e. creation and deletion).
      */
-    private static HashMap<String, String> destinationMap;
+    private static final HashMap<String, String> destinationMap = new HashMap<String, String>();
     /**
      * A map to hold the messageBatches for a specific destination
      */
-    private static HashMap<String, List<PutMessage>> messageMap;
+    private static final HashMap<String, List<PutMessage>> messageMap = new HashMap<String, List<PutMessage>>();
+
     private static TChannel tChannel;
     private static final ReadDestinationHostsHandler destinationHostsHandler = new ReadDestinationHostsHandler();
     private static final ReadConsumerGroupHostsHandler consumerGroupHostsHandler = new ReadConsumerGroupHostsHandler();
     private static final ReadPublisherOptionsHandler publisherOptionsHandler = new ReadPublisherOptionsHandler();
-
-    public MockFrontendService() {
-        this.consumerGroupMap = new HashMap<String, String>();
-        this.destinationMap = new HashMap<String, String>();
-        this.messageMap = new HashMap<String, List<PutMessage>>();
-    }
 
     public static void createServer() throws Exception {
         //Create TChannel
@@ -456,15 +451,9 @@ public class MockFrontendService {
     private static class AckMessagesHandler extends ThriftRequestHandler<BOut.ackMessages_args, BOut.ackMessages_result> {
         @Override
         public ThriftResponse<BOut.ackMessages_result> handleImpl(ThriftRequest<BOut.ackMessages_args> request) {
-            List<String> ackIds = request.getBody(BOut.ackMessages_args.class).getAckRequest().getAckIds();
-            List<String> nackIds = request.getBody(BOut.ackMessages_args.class).getAckRequest().getNackIds();
-
-            ReadDestinationHostsResult description = new ReadDestinationHostsResult();
             BOut.ackMessages_result res = new BOut.ackMessages_result();
             ThriftResponse<BOut.ackMessages_result> response;
-
             response = new ThriftResponse.Builder<BOut.ackMessages_result>(request).setBody(res).build();
-
             return response;
         }
     }

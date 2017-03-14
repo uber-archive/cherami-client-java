@@ -21,14 +21,13 @@
  *******************************************************************************/
 package com.uber.cherami.mocks;
 
-import com.uber.cherami.InputHostCommand;
-import com.uber.cherami.InputHostCommandType;
-import com.uber.cherami.PutMessage;
-import com.uber.cherami.PutMessageAck;
-import com.uber.cherami.Status;
-import com.uber.cherami.client.TListDeserializer;
-import com.uber.cherami.client.TListSerializer;
-import org.apache.thrift.TBase;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.eclipse.jetty.websocket.api.Session;
@@ -40,12 +39,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+import com.uber.cherami.InputHostCommand;
+import com.uber.cherami.InputHostCommandType;
+import com.uber.cherami.PutMessage;
+import com.uber.cherami.PutMessageAck;
+import com.uber.cherami.Status;
+import com.uber.cherami.client.TListDeserializer;
+import com.uber.cherami.client.TListSerializer;
 
 /**
  * A mock echo server that sends back the message that was received
@@ -56,7 +56,7 @@ public class MockServerSocket {
 
     @OnWebSocketMessage
     public void processUpload(Session session, byte[] input, int offest, int length) throws IOException, TException, InterruptedException {
-        TListDeserializer deserializer = new TListDeserializer(new TBinaryProtocol.Factory());
+        TListDeserializer<PutMessage> deserializer = new TListDeserializer<>(new TBinaryProtocol.Factory());
 
         List<PutMessage> messages = deserializer.deserialize(PutMessage.class, input);
 
@@ -82,8 +82,8 @@ public class MockServerSocket {
             command.setType(InputHostCommandType.ACK);
             command.setAck(ack);
             if (session.isOpen()) {
-                TListSerializer serializer = new TListSerializer(new TBinaryProtocol.Factory());
-                List<TBase> list = new ArrayList<>();
+                TListSerializer<InputHostCommand> serializer = new TListSerializer<>(new TBinaryProtocol.Factory());
+                List<InputHostCommand> list = new ArrayList<>();
                 list.add(command);
                 byte[] payload = serializer.serialize(list);
                 try {

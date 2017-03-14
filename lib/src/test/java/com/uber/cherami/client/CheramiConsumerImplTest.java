@@ -68,7 +68,6 @@ public class CheramiConsumerImplTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-
         // Spin up mock websocketServer on a random port
         server = new Server(0);
         ServletContextHandler ctx = new ServletContextHandler();

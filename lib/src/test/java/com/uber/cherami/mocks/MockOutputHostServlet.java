@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * WebSocketServlet for the mock OutputHost websocket server
  */
+@SuppressWarnings("serial")
 public class MockOutputHostServlet extends WebSocketServlet {
     @Override
     public void configure(WebSocketServletFactory factory) {

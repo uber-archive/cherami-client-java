@@ -21,14 +21,13 @@
  *******************************************************************************/
 package com.uber.cherami.mocks;
 
-import com.uber.cherami.ConsumerMessage;
-import com.uber.cherami.ControlFlow;
-import com.uber.cherami.OutputHostCommand;
-import com.uber.cherami.OutputHostCommandType;
-import com.uber.cherami.PutMessage;
-import com.uber.cherami.client.TListDeserializer;
-import com.uber.cherami.client.TListSerializer;
-import org.apache.thrift.TBase;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.eclipse.jetty.websocket.api.Session;
@@ -39,12 +38,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import com.uber.cherami.ConsumerMessage;
+import com.uber.cherami.ControlFlow;
+import com.uber.cherami.OutputHostCommand;
+import com.uber.cherami.OutputHostCommandType;
+import com.uber.cherami.PutMessage;
+import com.uber.cherami.client.TListDeserializer;
+import com.uber.cherami.client.TListSerializer;
 
 /**
  * A mock websocket server for the OutputHost.
@@ -58,14 +58,14 @@ public class MockOutputHostServerSocket {
 
     @OnWebSocketMessage
     public void processUpload(Session session, byte[] input, int offest, int length) throws IOException, TException {
-        TListDeserializer deserializer = new TListDeserializer(new TBinaryProtocol.Factory());
+        TListDeserializer<ControlFlow> deserializer = new TListDeserializer<>(new TBinaryProtocol.Factory());
 
         List<ControlFlow> controlFlows = deserializer.deserialize(ControlFlow.class, input);
         for (ControlFlow flow : controlFlows) {
             totalCredits += flow.getCredits();
 
-            TListSerializer serializer = new TListSerializer(new TBinaryProtocol.Factory());
-            List<TBase> list = new ArrayList<>();
+            TListSerializer<OutputHostCommand> serializer = new TListSerializer<>(new TBinaryProtocol.Factory());
+            List<OutputHostCommand> list = new ArrayList<>();
             while (totalCredits > 0 && !messages.isEmpty()) {
                 ConsumerMessage msg = new ConsumerMessage();
                 PutMessage putMessage = messages.poll();

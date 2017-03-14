@@ -10,11 +10,11 @@ install_ci:
 
 .PHONY: test_ci
 test_ci:
-	mvn verify -B
+	mvn verify -B -Dorg.eclipse.jetty.LEVEL=WARN
 
 .PHONY: cover_ci
 cover_ci:
-	mvn clean cobertura:cobertura coveralls:report
+	mvn clean cobertura:cobertura coveralls:report -Dorg.eclipse.jetty.LEVEL=WARN
 
 .PHONY: release
 release:
