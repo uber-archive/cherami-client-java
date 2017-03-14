@@ -1,11 +1,28 @@
+/*******************************************************************************
+ *  Copyright (c) 2017 Uber Technologies, Inc.
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ *******************************************************************************/
 package com.uber.cherami.example;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.uber.cherami.ChecksumOption;
 import com.uber.cherami.ConsumerGroupDescription;
@@ -58,11 +75,6 @@ public class Demo implements Runnable {
             }
         });
 
-        // Incrementally generate msgIds starting from 1
-        AtomicLong msgCounter = new AtomicLong(0);
-        // Keeps track of unique message ids received by consumers so far
-        Set<Long> receivedMsgIdsUniq = Collections.synchronizedSet(new HashSet<Long>());
-
         /*
          * Spin up consumers for this test. In a real world scenario, there
          * should be ONLY ONE consumer object per process. Internally, each
@@ -72,7 +84,7 @@ public class Demo implements Runnable {
         Daemon[] consumers = new Daemon[config.nConsumers];
         for (int i = 0; i < config.nConsumers; i++) {
             String name = "consumer-" + i;
-            consumers[i] = createConsumer(name, receivedMsgIdsUniq);
+            consumers[i] = createConsumer(name);
             consumers[i].start();
         }
 
@@ -85,7 +97,7 @@ public class Demo implements Runnable {
         Daemon[] publishers = new Daemon[config.nPublishers];
         for (int i = 0; i < config.nPublishers; i++) {
             String name = "publisher-" + i;
-            publishers[i] = createPublisher(name, msgCounter);
+            publishers[i] = createPublisher(name);
             publishers[i].start();
         }
 
@@ -97,7 +109,7 @@ public class Demo implements Runnable {
          */
         while (true) {
             // check if we consumed all messages
-            if (receivedMsgIdsUniq.size() >= nMessagesToReceive) {
+            if (context.consumedMsgIds.size() >= nMessagesToReceive) {
                 break;
             }
             sleep(TimeUnit.SECONDS.toMillis(1));
@@ -116,18 +128,18 @@ public class Demo implements Runnable {
         System.exit(0);
     }
 
-    private Daemon createPublisher(String name, AtomicLong msgCounter) {
+    private Daemon createPublisher(String name) {
         if (context.config.useAsync) {
-            return new Async.Publisher(name, context, msgCounter);
+            return new Async.Publisher(name, context);
         }
-        return new Sync.Publisher(name, context, msgCounter);
+        return new Sync.Publisher(name, context);
     }
 
-    private Daemon createConsumer(String name, Set<Long> receivedMsgIdsUniq) {
+    private Daemon createConsumer(String name) {
         if (context.config.useAsync) {
-            return new Async.Consumer(name, context, receivedMsgIdsUniq);
+            return new Async.Consumer(name, context);
         }
-        return new Sync.Consumer(name, context, receivedMsgIdsUniq);
+        return new Sync.Consumer(name, context);
     }
 
     private static CheramiClient buildClient(Config config) {

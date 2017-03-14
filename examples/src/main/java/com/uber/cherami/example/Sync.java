@@ -1,10 +1,29 @@
+/*******************************************************************************
+ *  Copyright (c) 2017 Uber Technologies, Inc.
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ *******************************************************************************/
 package com.uber.cherami.example;
 
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.uber.cherami.client.CheramiConsumer;
 import com.uber.cherami.client.CheramiDelivery;
@@ -32,7 +51,6 @@ public class Sync {
 
         private final String name;
         private final Context context;
-        private final AtomicLong msgCounter;
 
         private final Random random = new Random();
         private final CountDownLatch quitter = new CountDownLatch(1);
@@ -45,14 +63,10 @@ public class Sync {
          *            String representing the unique name of the publisher.
          * @param context
          *            Context object.
-         * @param msgCounter
-         *            AtomicLong to be used for generation of message
-         *            identifiers.
          */
-        public Publisher(String name, Context context, AtomicLong msgCounter) {
+        public Publisher(String name, Context context) {
             this.name = name;
             this.context = context;
-            this.msgCounter = msgCounter;
         }
 
         @Override
@@ -91,7 +105,7 @@ public class Sync {
 
                 while (remaining > 0 && quitter.getCount() > 0) {
 
-                    long id = msgCounter.incrementAndGet();
+                    long id = context.msgIdCounter.incrementAndGet();
                     PublisherMessage message = createMessage(id);
 
                     writeLatencyProfiler.start();
@@ -164,7 +178,6 @@ public class Sync {
 
         private final String name;
         private final Context context;
-        private final Set<Long> receivedMsgIdsUniq;
 
         private final CountDownLatch quitter = new CountDownLatch(1);
         private final CountDownLatch stopped = new CountDownLatch(1);
@@ -178,13 +191,10 @@ public class Sync {
          *            String representing the unique name of the consumer.
          * @param context
          *            Context object.
-         * @param receivedMsgIdsUniq
-         *            Set of unique message ids received so far.
          */
-        public Consumer(String name, Context context, Set<Long> receivedMsgIdsUniq) {
+        public Consumer(String name, Context context) {
             this.name = name;
             this.context = context;
-            this.receivedMsgIdsUniq = receivedMsgIdsUniq;
         }
 
         @Override
@@ -237,14 +247,10 @@ public class Sync {
 
                     byte[] data = delivery.getMessage().getPayload().getData();
                     AppData appData = AppData.deserialize(data);
-                    if (receivedMsgIdsUniq.contains(appData.id)) {
+                    if (context.consumedMsgIds.putIfAbsent(appData.id, true) != null) {
                         context.stats.messagesInDupCount.incrementAndGet();
-                    } else {
-                        receivedMsgIdsUniq.add(appData.id);
                     }
-
                     delivery.ack();
-
                     context.stats.messagesInCount.incrementAndGet();
                     context.stats.bytesInCount.addAndGet(data.length);
                 }
