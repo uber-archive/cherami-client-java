@@ -63,6 +63,7 @@ import com.uber.tchannel.api.TChannel;
 /**
  * Run multiple integration test scenarios
  */
+@Ignore
 public class CheramiIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(CheramiIntegrationTest.class);
     private static final String DESTINATION_PATH = "/reconfigure/test";
@@ -225,7 +226,6 @@ public class CheramiIntegrationTest {
         timer.cancel();
     }
 
-    @Ignore
     @Test(timeout = TEST_TIMEOUT_MILLIS)
     public void reconfigureConsumerTest() throws Exception {
         newConsumer();
