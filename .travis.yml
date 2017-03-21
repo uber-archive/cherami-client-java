@@ -20,7 +20,4 @@ install:
   - make install_ci
 
 script:
-  - make test_ci
-
-after_success:
   - make cover_ci
