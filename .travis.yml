@@ -13,15 +13,15 @@ before_install:
   - cd thrift-0.10.0 
   - ./configure --enable-libs=no --enable-tests=no --enable-tutorial=no
   - make -j2
+  - sudo make install
   - cd ../
 
 install:
-  - PATH=thrift-0.10.0/compiler/cpp:$PATH make install_ci
+  - make install_ci
 
 script:
-  - PATH=thrift-0.10.0/compiler/cpp:$PATH make cover_ci
+  - make cover_ci
 
 cache:
   directories:
   - $HOME/.m2
-  - thrift-0.10.0
