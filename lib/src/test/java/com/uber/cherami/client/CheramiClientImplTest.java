@@ -22,10 +22,12 @@
 package com.uber.cherami.client;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Random;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -52,6 +54,8 @@ import com.uber.cherami.ReadConsumerGroupRequest;
 import com.uber.cherami.ReadDestinationRequest;
 import com.uber.cherami.UpdateConsumerGroupRequest;
 import com.uber.cherami.UpdateDestinationRequest;
+import com.uber.cherami.client.metrics.DefaultMetricsClient;
+import com.uber.cherami.client.metrics.MetricsClient;
 import com.uber.cherami.mocks.MockFrontendService;
 
 /**
@@ -98,12 +102,47 @@ public class CheramiClientImplTest {
      * This ensures that each test stands alone and isn't affected by other tests
      */
     @Before
-    public final void clearMap() {
+    public void tearDown() {
         frontendService.clearMaps();
     }
 
     @Test
-    public void testClose() throws Exception {
+    public void testBuilder() throws IOException {
+        CheramiClient.Builder builder = new CheramiClient.Builder();
+        Assert.assertTrue(builder.getHost().isEmpty());
+        Assert.assertEquals(0, builder.getPort());
+        Assert.assertEquals("/etc/uber/hyperbahn/hosts.json", builder.getRouterFile());
+        builder.setRouterFile("/foo/bar");
+        Assert.assertEquals("/foo/bar", builder.getRouterFile());
+        builder = new CheramiClient.Builder("foobar.host", 9999);
+        Assert.assertEquals("foobar.host", builder.getHost());
+        Assert.assertEquals(9999, builder.getPort());
+    }
+
+    @Test(expected = UnknownHostException.class)
+    public void testBuilderThrowsUnknownHostException() throws IOException {
+        CheramiClient.Builder builder = new CheramiClient.Builder("foobar.host.12345", 9999);
+        builder.build();
+    }
+
+    @Test
+    public void testClientOptionsBuilder() {
+        ClientOptions options = new ClientOptions.Builder().build();
+        Assert.assertEquals("unknown", options.getClientAppName());
+        Assert.assertEquals("prod", options.getDeploymentStr());
+        Assert.assertEquals(60 * 1000L, options.getRpcTimeoutMillis());
+        Assert.assertTrue(options.getMetricsClient().getClass() == DefaultMetricsClient.class);
+        ClientOptions.Builder builder = new ClientOptions.Builder();
+        MetricsClient metricsClient = new DefaultMetricsClient();
+        builder.setClientAppName("foobar");
+        builder.setDeploymentStr("staging");
+        builder.setRpcTimeout(1000);
+        builder.setMetricsClient(metricsClient);
+        options = builder.build();
+        Assert.assertEquals("foobar", options.getClientAppName());
+        Assert.assertEquals("staging", options.getDeploymentStr());
+        Assert.assertEquals(1000L, options.getRpcTimeoutMillis());
+        Assert.assertEquals(metricsClient, options.getMetricsClient());
     }
 
     @Test

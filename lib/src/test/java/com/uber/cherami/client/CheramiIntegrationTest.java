@@ -30,10 +30,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -50,7 +46,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.uber.cherami.ConsumerMessage;
 import com.uber.cherami.CreateConsumerGroupRequest;
 import com.uber.cherami.CreateDestinationRequest;
 import com.uber.cherami.DeleteConsumerGroupRequest;
@@ -230,7 +225,7 @@ public class CheramiIntegrationTest {
     }
 
     @Test(timeout = TEST_TIMEOUT_MILLIS)
-    public void ReconfigureConsumerTest() throws Exception {
+    public void reconfigureConsumerTest() throws Exception {
         newConsumer();
 
         if (!consumer.isOpen()) {
@@ -240,7 +235,7 @@ public class CheramiIntegrationTest {
 
         List<TChannel> outputChannels = getOutputTChannels();
 
-        // Stop one of the servers after 100 ms
+        // Stop one of the servers after 75 ms
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -255,7 +250,7 @@ public class CheramiIntegrationTest {
             }
         }, 75);
 
-        ArrayList<String> receivedIds = new ArrayList<>(config.numMessagesToPublish);
+        ArrayList<String> receivedIds = new ArrayList<>(config.numMessagesToConsume);
         int numReceived = 0;
         while (numReceived < config.numMessagesToConsume) {
             CheramiDelivery delivery = consumer.read();
@@ -274,28 +269,6 @@ public class CheramiIntegrationTest {
         }
     }
 
-    @Test(timeout = TEST_TIMEOUT_MILLIS)
-    public void cheramiExecutorTest() throws Exception {
-        newConsumer();
-        consumer.open();
-
-        List<TChannel> outputChannels = getOutputTChannels();
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        DummyHandler handler = new DummyHandler(config.numMessagesToConsume);
-        CheramiExecutor cheramiExecutor = new CheramiExecutor(executorService, consumer, handler);
-
-        new Thread(cheramiExecutor).start();
-        handler.awaitShutdown();
-        cheramiExecutor.stop(10, TimeUnit.MILLISECONDS);
-        executorService.shutdown();
-
-        consumer.close();
-        for (TChannel outputChannel : outputChannels) {
-            outputChannel.shutdown();
-        }
-    }
-
     private List<TChannel> getOutputTChannels() throws Exception {
         List<TChannel> outputChannels = new ArrayList<>(outputHosts.size());
         for (HostAddress outputServer : outputHosts) {
@@ -306,32 +279,6 @@ public class CheramiIntegrationTest {
             outputChannels.add(channel);
         }
         return outputChannels;
-    }
-
-    private static class DummyHandler implements MessageHandler {
-        private final ArrayList<String> receivedIds;
-        private final CountDownLatch shutdownLatch = new CountDownLatch(1);
-        private final int numMessagesToConsume;
-
-        public DummyHandler(int numMessagesToConsume) {
-            this.receivedIds = new ArrayList<>();
-            this.numMessagesToConsume = numMessagesToConsume;
-        }
-
-        public void awaitShutdown() throws InterruptedException {
-            shutdownLatch.await();
-        }
-
-        @Override
-        public boolean handle(ConsumerMessage message) throws ExecutionException {
-            if (!receivedIds.contains(message.getAckId())) {
-                receivedIds.add(message.getAckId());
-                if (receivedIds.size() >= numMessagesToConsume) {
-                    shutdownLatch.countDown();
-                }
-            }
-            return true;
-        }
     }
 
     private static class IntegrationConfig {

@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TList;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -45,10 +44,6 @@ public class TListDeserializer<T extends TBase<?, ?>> {
     private final Logger logger = LoggerFactory.getLogger(TListDeserializer.class);
     private final TMemoryInputTransport transport;
     private final TProtocol protocol;
-
-    public TListDeserializer() {
-        this(new TBinaryProtocol.Factory());
-    }
 
     public TListDeserializer(TProtocolFactory protocolFactory) {
         this.transport = new TMemoryInputTransport();

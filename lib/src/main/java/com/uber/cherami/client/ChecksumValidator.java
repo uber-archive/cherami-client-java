@@ -84,7 +84,6 @@ public class ChecksumValidator {
             md.reset();
             return Arrays.equals(received, expected);
         }
-
         // no known checksum provided, just pass
         return true;
     }

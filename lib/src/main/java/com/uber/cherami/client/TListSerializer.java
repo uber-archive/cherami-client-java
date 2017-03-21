@@ -27,7 +27,6 @@ import java.util.List;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TList;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -57,10 +56,6 @@ public class TListSerializer<T extends TBase<?, ?>> {
      * Internal protocol used for serializing objects.
      */
     private final TProtocol protocol;
-
-    public TListSerializer() {
-        this(new TBinaryProtocol.Factory());
-    }
 
     /**
      * Constructor for TListSerializer.

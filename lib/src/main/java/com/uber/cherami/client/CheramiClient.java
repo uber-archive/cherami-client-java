@@ -408,7 +408,7 @@ public interface CheramiClient extends Closeable {
 
         private static final String DEFAULT_ROUTER_FILE = "/etc/uber/hyperbahn/hosts.json";
 
-        private String host;
+        private String host = "";
         private int port;
         private String routerFile = DEFAULT_ROUTER_FILE;
         private ClientOptions options = new ClientOptions.Builder().build();
@@ -470,6 +470,18 @@ public interface CheramiClient extends Closeable {
                 return new CheramiClientImpl(host, port, options);
             }
             return new CheramiClientImpl(routerFile, options);
+        }
+
+        protected String getHost() {
+            return this.host;
+        }
+
+        protected int getPort() {
+            return this.port;
+        }
+
+        protected String getRouterFile() {
+            return this.routerFile;
         }
     }
 }

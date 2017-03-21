@@ -41,8 +41,8 @@ import com.uber.cherami.PutMessage;
 /**
  * Unit tests for generating and verifying the different checksum options
  */
-public class ChecksumTests {
-    private final Logger logger = LoggerFactory.getLogger(ChecksumTests.class);
+public class ChecksumTest {
+    private final Logger logger = LoggerFactory.getLogger(ChecksumTest.class);
     private final PutMessage testPutMessage;
     private final ChecksumValidator checksumValidator;
     private ChecksumWriter checksumWriter;
@@ -51,7 +51,7 @@ public class ChecksumTests {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    public ChecksumTests() {
+    public ChecksumTest() {
         this.testPutMessage = new PutMessage();
         this.testPutMessage.setData("Hello, world!".getBytes());
         this.checksumValidator = new ChecksumValidator();
@@ -75,7 +75,6 @@ public class ChecksumTests {
         byte[] expected = new BigInteger("6cd3556deb0da54bca060b4c39479839", 16).toByteArray();
         checksumWriter.write(testPutMessage);
         assert (Arrays.equals(testPutMessage.getMd5DataChecksum(), expected));
-        logger.info("ChecksumTests: PASSED: generateMD5Test");
     }
 
     @Test
@@ -88,7 +87,6 @@ public class ChecksumTests {
             logger.error("MD5 algorithm does not exist", e);
             assert (false);
         }
-        logger.info("ChecksumTests: PASSED: md5ValidateSuccessTest");
     }
 
     @Test
@@ -96,14 +94,11 @@ public class ChecksumTests {
         try {
             byte[] checksum = "1234567890ABC".getBytes(UTF_8);
             testPutMessage.setMd5DataChecksum(checksum);
-
             assert (checksumValidator.validate(testDelivery.getMessage()) == false);
         } catch (IOException e) {
             logger.error("MD5 algorithm does not exist", e);
             assert (false);
         }
-
-        logger.info("ChecksumTests: PASSED: md5ValidateFailureTest");
     }
 
     @Test
@@ -117,7 +112,6 @@ public class ChecksumTests {
         long expected = 3957769958L;
         checksumWriter.write(testPutMessage);
         assert (testPutMessage.getCrc32IEEEDataChecksum() == expected);
-        logger.info("ChecksumTests: PASSED: generateCRC32Test");
     }
 
     @Test
@@ -130,7 +124,6 @@ public class ChecksumTests {
             logger.error("Algorithm does not exist", e);
             assert (false);
         }
-        logger.info("ChecksumTests: PASSED: crc32IEEEValidateSuccessTest");
     }
 
     @Test
@@ -171,4 +164,8 @@ public class ChecksumTests {
         logger.info("ChecksumTests: PASSED: multipleChecksumTest");
     }
 
+    @Test
+    public void noPayloadTest() throws IOException {
+        assert (!checksumValidator.validate(new ConsumerMessage()));
+    }
 }

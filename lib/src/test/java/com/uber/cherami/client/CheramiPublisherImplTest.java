@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -136,6 +137,17 @@ public class CheramiPublisherImplTest {
         publisher.close();
         assert (publisher.isOpen() == false);
         logger.info("CheramiPublisherImplTest: PASSED: CloseTest");
+    }
+
+    @Test
+    public void publisherMessageTest() {
+        byte[] data = "hello".getBytes();
+        PublisherMessage msg = new PublisherMessage(data);
+        Assert.assertEquals(0, msg.getDelaySeconds());
+        Assert.assertArrayEquals(data, msg.getData());
+        msg = new PublisherMessage(data, Integer.MAX_VALUE);
+        Assert.assertEquals(Integer.MAX_VALUE, msg.getDelaySeconds());
+        Assert.assertEquals(data, msg.getData());
     }
 
     @Test(timeout = PUBLISH_TEST_TIMEOUT_MILLIS)
