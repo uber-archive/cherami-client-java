@@ -14,6 +14,7 @@ before_install:
   - ./configure --enable-libs=no --enable-tests=no --enable-tutorial=no
   - make -j2
   - sudo make install
+  - cd ../
 
 install:
   - make install_ci
