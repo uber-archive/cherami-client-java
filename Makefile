@@ -14,7 +14,7 @@ test_ci:
 
 .PHONY: cover_ci
 cover_ci:
-	mvn clean -DTRAVIS_JOB_ID=$(TRAVIS_JOB_ID) cobertura:cobertura coveralls:report -Dorg.eclipse.jetty.LEVEL=WARN
+	mvn clean -X -DTRAVIS_JOB_ID=$(TRAVIS_JOB_ID) cobertura:cobertura coveralls:report -Dorg.eclipse.jetty.LEVEL=WARN
 
 .PHONY: release
 release:
