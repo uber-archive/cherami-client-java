@@ -150,6 +150,7 @@
                         </excludes>
                     </instrumentation>
                     <check/>
+                    <aggregate>true</aggregate>
                 </configuration>
                 <executions>
                     <execution>
@@ -196,6 +197,7 @@
                         </excludes>
                     </instrumentation>
                     <check/>
+                    <aggregate>true</aggregate>
                 </configuration>
             </plugin>
         </plugins>

@@ -4,7 +4,6 @@ Cherami Client for JVM
 Java client library for publishing/consuming messages to/from [Cherami](https://eng.uber.com/cherami/).
 
 [![Build Status](https://travis-ci.org/uber/cherami-client-java.svg?branch=master)](https://travis-ci.org/uber/cherami-client-java) [![Coverage Status](https://coveralls.io/repos/uber/cherami-client-java/badge.svg?branch=master&service=github)](https://coveralls.io/github/uber/cherami-client-java?branch=master)
-[![stable](http://badges.github.io/stability-badges/dist/stable.svg)](http://github.com/badges/stability-badges)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Using cherami-client-java
