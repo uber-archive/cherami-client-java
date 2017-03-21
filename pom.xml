@@ -168,6 +168,7 @@
                 <version>4.3.0</version>
                 <configuration>
                     <serviceName>travis-ci</serviceName>
+                    <serviceJobId>${env.TRAVIS_JOB_ID} </serviceJobId>
                     <coberturaReports>
                         <coberturaReport>${basedir}/target/site/cobertura/coverage.xml</coberturaReport>
                     </coberturaReports>
