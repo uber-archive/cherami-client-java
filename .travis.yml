@@ -20,4 +20,8 @@ install:
   - make install_ci
 
 script:
-  - make test_ci
+  - make cover_ci
+
+cache:
+  directories:
+  - $HOME/.m2
