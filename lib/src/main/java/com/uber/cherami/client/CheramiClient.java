@@ -40,6 +40,7 @@ import com.uber.cherami.ListConsumerGroupRequest;
 import com.uber.cherami.ListConsumerGroupResult;
 import com.uber.cherami.ListDestinationsRequest;
 import com.uber.cherami.ListDestinationsResult;
+import com.uber.cherami.ReadConsumerGroupHostsResult;
 import com.uber.cherami.ReadConsumerGroupRequest;
 import com.uber.cherami.ReadDestinationRequest;
 import com.uber.cherami.ReadPublisherOptionsResult;
@@ -58,24 +59,24 @@ import com.uber.cherami.UpdateDestinationRequest;
  *
  * Examples:
  *
- * Prod client that uses Hyperbahn for discovery:
+ * Prod client that uses auto service discovery:
  *
  * <code>
- *          MetricsClient client = new M3Client(m3Scope);
+ *          MetricsClient client = new FooBarMetricsClient();
  *          ClientOptions options = new ClientOptions().setMetricsClient(client);
  *          CheramiClient client = CheramiClient.Builder().setClientOptions(options).build();
  *  </code>
  *
- * Staging client that uses hyperbahn for discovery: <code>
+ * Staging client that uses auto service discovery: <code>
  *          ClientOptions options = new ClientOptions();
- *          options.setMetricsClient(new M3Client(m3Scope));
+ *          options.setMetricsClient(new FooBarMetricsClient());
  *          options.setDeploymentStr("staging");
  *          CheramiClient client = CheramiClient.Builder().setClientOptions(options).build();
  *  </code>
  *
  * Staging client that uses a specific ip:port: <code>
  *          ClientOptions options = new ClientOptions();
- *          options.setMetricsClient(new M3Client(m3Scope));
+ *          options.setMetricsClient(new FooBarMetricsClient());
  *          options.setDeploymentStr("staging");
  *          CheramiClient client = CheramiClient.Builder(host, port).setClientOptions(options).build();
  *      </code>
@@ -377,7 +378,8 @@ public interface CheramiClient extends Closeable {
      *            Destination path.
      * @param consumerGroupName
      *            Consumer group name that needs to receive messages.
-     * @return List of host addresses, representing the streaming endpoints.
+     * @return ReadConsumerGroupHostsResult containing of the
+     *         [protocol,hostAddrs] tuple.
      * @throws BadRequestError
      *             If the request is bad.
      * @throws EntityNotExistsError
@@ -387,7 +389,7 @@ public interface CheramiClient extends Closeable {
      * @throws IOException
      *             Any other network I/O error.
      */
-    List<HostAddress> readConsumerGroupHosts(String path, String consumerGroupName)
+    ReadConsumerGroupHostsResult readConsumerGroupHosts(String path, String consumerGroupName)
             throws BadRequestError, EntityNotExistsError, EntityDisabledError, IOException;
 
     /**

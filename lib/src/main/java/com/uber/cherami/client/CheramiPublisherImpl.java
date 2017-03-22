@@ -38,6 +38,9 @@ import com.uber.cherami.BadRequestError;
 import com.uber.cherami.ChecksumOption;
 import com.uber.cherami.EntityDisabledError;
 import com.uber.cherami.EntityNotExistsError;
+import com.uber.cherami.HostAddress;
+import com.uber.cherami.HostProtocol;
+import com.uber.cherami.Protocol;
 import com.uber.cherami.PutMessage;
 import com.uber.cherami.ReadPublisherOptionsResult;
 import com.uber.cherami.client.ConnectionManager.ConnectionFactory;
@@ -59,8 +62,6 @@ public class CheramiPublisherImpl implements CheramiPublisher, Reconfigurable {
     private static final Error RECEIPT_ERROR_CLIENT_TIMED_OUT = new Error("Client timed out.");
 
     private static final String OPEN_PUBLISHER_ENDPOINT = "open_publisher_stream";
-
-    private static final int CHERAMI_INPUTHOST_SERVER_PORT = 6189;
 
     private final String path;
     private final long msgIdPrefix;
@@ -200,10 +201,40 @@ public class CheramiPublisherImpl implements CheramiPublisher, Reconfigurable {
         return new PutMessageRequest(msg, new CheramiFuture<SendReceipt>());
     }
 
+    private EndpointsInfo toEndpointsInfo(ReadPublisherOptionsResult result) throws IOException {
+        int rpcPort = 0;
+        List<HostAddress> streamingEndpoints = null;
+
+        for (HostProtocol protocol : result.getHostProtocols()) {
+            if (protocol.getProtocol() == Protocol.TCHANNEL) {
+                if (protocol.getHostAddresses().size() > 0) {
+                    // there is an implicit assumption that the TChannel
+                    // endpoint will be supported by all input hosts. The
+                    // tchannel/rpc port is used for sending ack/nacks.
+                    rpcPort = protocol.getHostAddresses().get(0).getPort();
+                }
+                continue;
+            }
+            if (protocol.getProtocol() == Protocol.WS) {
+                // these endpoints must be used for data streaming
+                streamingEndpoints = protocol.getHostAddresses();
+            }
+        }
+
+        if (streamingEndpoints == null || streamingEndpoints.size() == 0) {
+            throw new IOException("readPublisherOptions failed to return a websocket streaming endpoint");
+        }
+        if (rpcPort == 0) {
+            logger.warn("readPublisherOptions failed to return a rpc/tChannel endpoint");
+        }
+
+        return new EndpointsInfo(rpcPort, streamingEndpoints, result.getChecksumOption());
+    }
+
     private EndpointsInfo findPublishEndpoints() throws IOException {
         try {
             ReadPublisherOptionsResult result = client.readPublisherOptions(path);
-            return new EndpointsInfo(result.getHostAddresses(), result.getChecksumOption());
+            return toEndpointsInfo(result);
         } catch (EntityNotExistsError | EntityDisabledError e) {
             throw new IllegalStateException(e);
         } catch (BadRequestError e) {
@@ -234,9 +265,9 @@ public class CheramiPublisherImpl implements CheramiPublisher, Reconfigurable {
     private ConnectionManager<InputHostConnection> newConnectionManager() {
         ConnectionFactory<InputHostConnection> factory = new ConnectionFactory<InputHostConnection>() {
             @Override
-            public InputHostConnection create(String host, int port, ChecksumOption checksumOption)
+            public InputHostConnection create(String host, int dataPort, int rpcPort, ChecksumOption checksumOption)
                     throws IOException, InterruptedException {
-                return newInputHostConnection(host, port, checksumOption);
+                return newInputHostConnection(host, dataPort, rpcPort, checksumOption);
             }
         };
         EndpointFinder finder = new EndpointFinder() {
@@ -248,15 +279,10 @@ public class CheramiPublisherImpl implements CheramiPublisher, Reconfigurable {
         return new ConnectionManager<InputHostConnection>("publisher", factory, finder);
     }
 
-    private InputHostConnection newInputHostConnection(String host, int port, ChecksumOption checksumOption)
+    private InputHostConnection newInputHostConnection(String host, int dataPort, int rpcPort,
+            ChecksumOption checksumOption)
             throws IOException, InterruptedException {
-        // TODO: This will be gone once the server side is updated to not
-        // support TChannel streaming at all, which means
-        // the only port will be for websockets
-        if (port == 4240) {
-            port = CHERAMI_INPUTHOST_SERVER_PORT;
-        }
-        String serverUrl = String.format("ws://%s:%d/%s", host, port, OPEN_PUBLISHER_ENDPOINT);
+        String serverUrl = String.format("ws://%s:%d/%s", host, dataPort, OPEN_PUBLISHER_ENDPOINT);
         InputHostConnection connection = new InputHostConnection(serverUrl, path, checksumOption, options, this,
                 messageQueue, metricsReporter);
         connection.open();

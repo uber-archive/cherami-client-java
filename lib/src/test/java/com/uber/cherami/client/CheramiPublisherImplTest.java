@@ -24,6 +24,7 @@ package com.uber.cherami.client;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +43,8 @@ import com.uber.cherami.CreateDestinationRequest;
 import com.uber.cherami.DeleteDestinationRequest;
 import com.uber.cherami.DestinationType;
 import com.uber.cherami.HostAddress;
+import com.uber.cherami.HostProtocol;
+import com.uber.cherami.Protocol;
 import com.uber.cherami.client.SendReceipt.ReceiptStatus;
 import com.uber.cherami.client.metrics.DefaultMetricsClient;
 import com.uber.cherami.client.metrics.MetricsReporter;
@@ -62,6 +65,18 @@ public class CheramiPublisherImplTest {
     private static MockFrontendService frontendService;
     private static Server server;
 
+    private static HostProtocol newHostProtocol(String host, int port, Protocol protocol) {
+        HostProtocol hostProtocol = new HostProtocol();
+        List<HostAddress> hostAddrs = new ArrayList<HostAddress>();
+        HostAddress addr = new HostAddress();
+        addr.setHost(host);
+        addr.setPort(port);
+        hostAddrs.add(addr);
+        hostProtocol.setProtocol(protocol);
+        hostProtocol.setHostAddresses(hostAddrs);
+        return hostProtocol;
+    }
+
     @BeforeClass
     public static void setup() throws Exception {
         // Spin up mock websocketServer on a random port
@@ -73,16 +88,13 @@ public class CheramiPublisherImplTest {
         server.start();
         int port = ((ServerConnector) server.getConnectors()[0]).getLocalPort();
 
-        HostAddress address = new HostAddress();
-        address.setHost("127.0.0.1");
-        address.setPort(port);
-        ArrayList<HostAddress> hosts = new ArrayList<>();
-        hosts.add(address);
-
         // Spin up mock FrontEnd
         frontendService = new MockFrontendService();
         MockFrontendService.createServer();
-        MockFrontendService.setHosts(hosts, new ArrayList<HostAddress>());
+        List<HostProtocol> hostProtocols = new ArrayList<HostProtocol>();
+        hostProtocols.add(newHostProtocol("127.0.0.1", port, Protocol.WS));
+        hostProtocols.add(newHostProtocol("127.0.0.1", frontendService.getPort(), Protocol.TCHANNEL));
+        MockFrontendService.setHosts(hostProtocols, new ArrayList<HostProtocol>());
 
         client = new CheramiClient.Builder("127.0.0.1", frontendService.getPort()).build();
 
