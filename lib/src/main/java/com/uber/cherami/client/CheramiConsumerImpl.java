@@ -39,6 +39,9 @@ import com.uber.cherami.ChecksumOption;
 import com.uber.cherami.EntityDisabledError;
 import com.uber.cherami.EntityNotExistsError;
 import com.uber.cherami.HostAddress;
+import com.uber.cherami.HostProtocol;
+import com.uber.cherami.Protocol;
+import com.uber.cherami.ReadConsumerGroupHostsResult;
 import com.uber.cherami.client.ConnectionManager.ConnectionFactory;
 import com.uber.cherami.client.ConnectionManager.ConnectionManagerClosedException;
 import com.uber.cherami.client.ConnectionManager.EndpointFinder;
@@ -57,9 +60,6 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
     private static final String DELIVERY_TOKEN_SPLITTER = "|";
     private static final String OUTPUT_SERVICE_NAME = "cherami-outputhost";
     private static final String OPEN_CONSUMER_API = "open_consumer_stream";
-
-    private static final int TCHANNEL_STREAMING_PORT = 4254;
-    private static final int WEBSOCKET_STREAMING_PORT = 6190;
 
     private final String path;
     private final String consumerGroupName;
@@ -243,10 +243,40 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         return new Pair<OutputHostConnection, DeliveryID>(connMap.get(id.getAcknowledgerID()), id);
     }
 
+    private EndpointsInfo toEndpointsInfo(ReadConsumerGroupHostsResult result) throws IOException {
+        int rpcPort = 0;
+        List<HostAddress> streamingEndpoints = null;
+
+        for (HostProtocol protocol : result.getHostProtocols()) {
+            if (protocol.getProtocol() == Protocol.TCHANNEL) {
+                if (protocol.getHostAddresses().size() > 0) {
+                    // there is an implicit assumption that the TChannel
+                    // endpoint must be supported by all output hosts. The
+                    // tchannel/rpc port is used for sending ack/nacks.
+                    rpcPort = protocol.getHostAddresses().get(0).getPort();
+                }
+                continue;
+            }
+            if (protocol.getProtocol() == Protocol.WS) {
+                // these endpoints must be used for data streaming
+                streamingEndpoints = protocol.getHostAddresses();
+            }
+        }
+
+        if (streamingEndpoints == null || streamingEndpoints.size() == 0) {
+            throw new IOException("readConsumerGroupHosts failed to return a websocket streaming endpoint");
+        }
+        if (rpcPort == 0) {
+            throw new IOException("readConsumerGroupHosts failed to return a rpc/tChannel endpoint");
+        }
+
+        return new EndpointsInfo(rpcPort, streamingEndpoints, ChecksumOption.CRC32IEEE);
+    }
+
     private EndpointsInfo findConsumeEndpoints() throws IOException {
         try {
-            List<HostAddress> hostAddrs = client.readConsumerGroupHosts(path, consumerGroupName);
-            return new EndpointsInfo(hostAddrs, ChecksumOption.CRC32IEEE);
+            ReadConsumerGroupHostsResult result = client.readConsumerGroupHosts(path, consumerGroupName);
+            return toEndpointsInfo(result);
         } catch (EntityNotExistsError | EntityDisabledError e) {
             throw new IllegalStateException(e);
         } catch (BadRequestError e) {
@@ -258,14 +288,11 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         }
     }
 
-    private OutputHostConnection newOutputHostConnection(String host, int port, ChecksumOption checksumOption)
+    private OutputHostConnection newOutputHostConnection(String host, int dataPort, int rpcPort,
+            ChecksumOption checksumOption)
             throws IOException, InterruptedException {
-        // TODO: This will be gone once the server side is updated to not
-        // support TChannel streaming at all, which means
-        // the only port will be for websockets
-        int dataPort = (port == TCHANNEL_STREAMING_PORT) ? WEBSOCKET_STREAMING_PORT : port;
         String wsUrl = String.format("ws://%s:%d/%s", host, dataPort, OPEN_CONSUMER_API);
-        OutputHostConnection connection = new OutputHostConnection(wsUrl, host, port, path, consumerGroupName,
+        OutputHostConnection connection = new OutputHostConnection(wsUrl, host, rpcPort, path, consumerGroupName,
                 subChannel, options, this, deliveryQueue, metricsReporter);
         connection.open();
         return connection;
@@ -274,9 +301,9 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
     private ConnectionManager<OutputHostConnection> newConnectionManager() {
         ConnectionFactory<OutputHostConnection> factory = new ConnectionFactory<OutputHostConnection>() {
             @Override
-            public OutputHostConnection create(String host, int port, ChecksumOption checksumOption)
+            public OutputHostConnection create(String host, int dataPort, int rpcPort, ChecksumOption checksumOption)
                     throws IOException, InterruptedException {
-                return newOutputHostConnection(host, port, checksumOption);
+                return newOutputHostConnection(host, dataPort, rpcPort, checksumOption);
             }
         };
         EndpointFinder finder = new EndpointFinder() {

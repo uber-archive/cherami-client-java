@@ -256,15 +256,18 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      * @author venkat
      */
     public static class EndpointsInfo {
+        /** Port to be used for rpc calls to any of hostAddrs. */
+        public final int rpcPort;
         /** Type of checksum, examples are crc32, md5. */
         public final ChecksumOption checksumOption;
-        /** List of ip:port host addresses. */
+        /** List of ip:port endpoints to be used for data streaming. */
         public final List<HostAddress> hostAddrs;
 
         /**
          * Creates an EndpointsInfo object with defaults.
          */
         public EndpointsInfo() {
+            this.rpcPort = 0;
             this.checksumOption = ChecksumOption.CRC32IEEE;
             this.hostAddrs = new ArrayList<>();
         }
@@ -272,13 +275,17 @@ public class ConnectionManager<T extends Connection> implements Runnable {
         /**
          * Creates and EndpointsInfo object.
          *
+         * @param rpcPort
+         *            int representing the port to be used for rpc calls to any
+         *            of the specified hostAddrs endpoints.
          * @param hostAddrs
-         *            List of host addresses.
+         *            List of host addresses to be used for data streaming.
          * @param checksumOption
          *            The checksum option to be used for the connections. This
          *            value will be passed to the connection factory.
          */
-        public EndpointsInfo(List<HostAddress> hostAddrs, ChecksumOption checksumOption) {
+        public EndpointsInfo(int rpcPort, List<HostAddress> hostAddrs, ChecksumOption checksumOption) {
+            this.rpcPort = rpcPort;
             this.hostAddrs = hostAddrs;
             this.checksumOption = checksumOption;
         }
@@ -297,8 +304,10 @@ public class ConnectionManager<T extends Connection> implements Runnable {
          *
          * @param host
          *            Host name or ip address of the endpoint.
-         * @param port
-         *            Port number.
+         * @param dataPort
+         *            Port number to be used for streaming data.
+         * @param rpcPort
+         *            Port number to be used for rpc.
          * @param option
          *            Checksum option to be used by this connection.
          * @return Connection object.
@@ -308,7 +317,8 @@ public class ConnectionManager<T extends Connection> implements Runnable {
          * @throws IOException
          *             If connection creation fails.
          */
-        T create(String host, int port, ChecksumOption option) throws InterruptedException, IOException;
+        T create(String host, int dataPort, int rpcPort, ChecksumOption option)
+                throws InterruptedException, IOException;
     }
 
     /**
@@ -344,7 +354,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
 
                     if (info.hostAddrs.isEmpty()) {
                         State<T> state = stateRef.get();
-                        repairConnections(state.addrs, state.checksumOption);
+                        repairConnections(state.addrs, state.rpcPort, state.checksumOption);
                     } else {
                         repairConnections(info);
                     }
@@ -393,7 +403,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
             String key = String.format("%s:%d", host.getHost(), host.getPort());
             endpoints.add(key);
         }
-        repairConnections(endpoints, info.checksumOption);
+        repairConnections(endpoints, info.rpcPort, info.checksumOption);
     }
 
     private boolean isClosing() {
@@ -406,7 +416,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      * As each connection succeeds, its added to the existing set of endpoints
      * and the state is updated atomically.
      */
-    private void connectAll(List<String> connectAddrs, ChecksumOption checksumOption) {
+    private void connectAll(List<String> connectAddrs, int rpcPort, ChecksumOption checksumOption) {
 
         if (connectAddrs.size() == 0) {
             return;
@@ -415,7 +425,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
         List<Future<T>> futures = new ArrayList<>(connectAddrs.size());
         for (String ep : connectAddrs) {
             // kick off async connect to all endpoints
-            Future<T> future = executor.submit(new Connector<T>(ep, checksumOption, factory));
+            Future<T> future = executor.submit(new Connector<T>(ep, rpcPort, checksumOption, factory));
             futures.add(future);
         }
 
@@ -438,7 +448,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
                     if (conn != null) {
                         addrToConns = new HashMap<>(addrToConns);
                         addrToConns.put(connectAddrs.get(i), conn);
-                        State<T> newState = new State<T>(allAddrs, addrToConns, checksumOption);
+                        State<T> newState = new State<T>(allAddrs, addrToConns, rpcPort, checksumOption);
                         this.stateRef.set(newState);
                     }
                     // null out the completed futures
@@ -470,7 +480,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      * (6) As each endpoint is connected, copy/add endpoint to state and update
      * atomically.
      */
-    private void repairConnections(Set<String> desiredEndpoints, ChecksumOption checksumOption) {
+    private void repairConnections(Set<String> desiredEndpoints, int rpcPort, ChecksumOption checksumOption) {
 
         if (isClosing() || desiredEndpoints.isEmpty()) {
             return;
@@ -527,13 +537,13 @@ public class ConnectionManager<T extends Connection> implements Runnable {
 
         if (newAddrToConnections != null) {
             // Something got changed, update the state before proceeding
-            State<T> newState = new State<T>(desiredEndpoints, newAddrToConnections, checksumOption);
+            State<T> newState = new State<T>(desiredEndpoints, newAddrToConnections, rpcPort, checksumOption);
             this.stateRef.set(newState);
             currState = newState;
         }
 
         // now connect to all new endpoints
-        connectAll(connectAddrs, checksumOption);
+        connectAll(connectAddrs, rpcPort, checksumOption);
     }
 
     /**
@@ -546,11 +556,13 @@ public class ConnectionManager<T extends Connection> implements Runnable {
     private static class Connector<T extends Connection> implements Callable<T> {
 
         private final String addr;
+        private final int rpcPort;
         private final ChecksumOption checksumOption;
         private final ConnectionFactory<T> factory;
 
-        Connector(String addr, ChecksumOption checksumOption, ConnectionFactory<T> factory) {
+        Connector(String addr, int rpcPort, ChecksumOption checksumOption, ConnectionFactory<T> factory) {
             this.addr = addr;
+            this.rpcPort = rpcPort;
             this.checksumOption = checksumOption;
             this.factory = factory;
         }
@@ -572,7 +584,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
             if (hostAddr == null) {
                 return null;
             }
-            return factory.create(hostAddr.getHost(), hostAddr.getPort(), checksumOption);
+            return factory.create(hostAddr.getHost(), hostAddr.getPort(), rpcPort, checksumOption);
         }
     }
 
@@ -583,20 +595,23 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      */
     private static class State<T extends Connection> {
 
+        public final int rpcPort;
         public final Set<String> addrs;
         public final List<T> connections;
         public final ChecksumOption checksumOption;
         public final Map<String, T> addrToConnection;
 
         State() {
+            this.rpcPort = 0;
             this.addrs = new HashSet<String>(4);
             this.addrToConnection = new HashMap<String, T>(4);
             this.connections = new ArrayList<T>();
             this.checksumOption = ChecksumOption.CRC32IEEE;
         }
 
-        State(Set<String> addrs, Map<String, T> addrToConnection, ChecksumOption checksumOption) {
+        State(Set<String> addrs, Map<String, T> addrToConnection, int rpcPort, ChecksumOption checksumOption) {
             this.addrs = addrs;
+            this.rpcPort = rpcPort;
             this.checksumOption = checksumOption;
             this.addrToConnection = addrToConnection;
             this.connections = new ArrayList<>(addrToConnection.values());

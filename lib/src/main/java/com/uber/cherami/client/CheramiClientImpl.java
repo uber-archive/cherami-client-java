@@ -77,6 +77,7 @@ import com.uber.cherami.ListConsumerGroupResult;
 import com.uber.cherami.ListDestinationsRequest;
 import com.uber.cherami.ListDestinationsResult;
 import com.uber.cherami.ReadConsumerGroupHostsRequest;
+import com.uber.cherami.ReadConsumerGroupHostsResult;
 import com.uber.cherami.ReadConsumerGroupRequest;
 import com.uber.cherami.ReadDestinationHostsRequest;
 import com.uber.cherami.ReadDestinationRequest;
@@ -746,7 +747,7 @@ public class CheramiClientImpl implements CheramiClient {
     }
 
     @Override
-    public List<HostAddress> readConsumerGroupHosts(String path, String consumerGroupName)
+    public ReadConsumerGroupHostsResult readConsumerGroupHosts(String path, String consumerGroupName)
             throws BadRequestError, EntityNotExistsError, EntityDisabledError, IOException {
 
         if (path.isEmpty()) {
@@ -766,7 +767,7 @@ public class CheramiClientImpl implements CheramiClient {
             thriftResponse = doRemoteCall(thriftRequest);
             readConsumerGroupHosts_result result = thriftResponse.getBody(readConsumerGroupHosts_result.class);
             if (thriftResponse.getResponseCode() == ResponseCode.OK) {
-                return result.getSuccess().getHostAddresses();
+                return result.getSuccess();
             }
             if (result != null && result.isSetRequestError()) {
                 throw result.getRequestError();

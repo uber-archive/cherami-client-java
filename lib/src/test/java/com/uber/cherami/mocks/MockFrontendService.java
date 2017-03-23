@@ -33,7 +33,7 @@ import com.uber.cherami.ConsumerGroupDescription;
 import com.uber.cherami.DestinationDescription;
 import com.uber.cherami.EntityAlreadyExistsError;
 import com.uber.cherami.EntityNotExistsError;
-import com.uber.cherami.HostAddress;
+import com.uber.cherami.HostProtocol;
 import com.uber.cherami.ListConsumerGroupResult;
 import com.uber.cherami.ListDestinationsResult;
 import com.uber.cherami.PutMessage;
@@ -105,7 +105,7 @@ public class MockFrontendService {
         return outputTChannel;
     }
 
-    public static void setHosts(List<HostAddress> destinationHosts, List<HostAddress> consumerHosts) {
+    public static void setHosts(List<HostProtocol> destinationHosts, List<HostProtocol> consumerHosts) {
         destinationHostsHandler.setDestinationHosts(destinationHosts);
         publisherOptionsHandler.setDestinationHosts(destinationHosts);
         consumerGroupHostsHandler.setConsumerGroupHosts(consumerHosts);
@@ -363,19 +363,18 @@ public class MockFrontendService {
         }
     }
 
-
     private static class ReadDestinationHostsHandler extends ThriftRequestHandler<BFrontend.readDestinationHosts_args, BFrontend.readDestinationHosts_result> {
-        List<HostAddress> hosts;
+        List<HostProtocol> hostProtocols;
 
-        public void setDestinationHosts(List<HostAddress> newHosts) {
-            hosts = newHosts;
+        public void setDestinationHosts(List<HostProtocol> hostProtocols) {
+            this.hostProtocols = hostProtocols;
         }
 
         @Override
         public ThriftResponse<BFrontend.readDestinationHosts_result> handleImpl(ThriftRequest<BFrontend.readDestinationHosts_args> request) {
             String path = request.getBody(BFrontend.readDestinationHosts_args.class).getGetHostsRequest().getPath();
 
-            ReadDestinationHostsResult description = new ReadDestinationHostsResult();
+            ReadDestinationHostsResult result = new ReadDestinationHostsResult();
             BFrontend.readDestinationHosts_result res = new BFrontend.readDestinationHosts_result();
             ThriftResponse<BFrontend.readDestinationHosts_result> response;
 
@@ -383,8 +382,8 @@ public class MockFrontendService {
                 res.setEntityError(new EntityNotExistsError("Entity does not exist"));
                 response = new ThriftResponse.Builder<BFrontend.readDestinationHosts_result>(request).setBody(res).setResponseCode(ResponseCode.Error).build();
             } else {
-                description.setHostAddresses(hosts);
-                res.setSuccess(description);
+                result.setHostProtocols(hostProtocols);
+                res.setSuccess(result);
                 response = new ThriftResponse.Builder<BFrontend.readDestinationHosts_result>(request).setBody(res).build();
             }
             return response;
@@ -392,10 +391,10 @@ public class MockFrontendService {
     }
 
     private static class ReadConsumerGroupHostsHandler extends ThriftRequestHandler<BFrontend.readConsumerGroupHosts_args, BFrontend.readConsumerGroupHosts_result> {
-        List<HostAddress> hosts;
+        List<HostProtocol> hostProtocols;
 
-        public void setConsumerGroupHosts(List<HostAddress> newHosts) {
-            hosts = newHosts;
+        public void setConsumerGroupHosts(List<HostProtocol> hostProtocols) {
+            this.hostProtocols = hostProtocols;
         }
 
         @Override
@@ -411,7 +410,7 @@ public class MockFrontendService {
                 res.setEntityError(new EntityNotExistsError("Entity does not exist"));
                 response = new ThriftResponse.Builder<BFrontend.readConsumerGroupHosts_result>(request).setBody(res).setResponseCode(ResponseCode.Error).build();
             } else {
-                description.setHostAddresses(hosts);
+                description.setHostProtocols(hostProtocols);
                 res.setSuccess(description);
                 response = new ThriftResponse.Builder<BFrontend.readConsumerGroupHosts_result>(request).setBody(res).build();
             }
@@ -421,10 +420,10 @@ public class MockFrontendService {
     }
 
     private static class ReadPublisherOptionsHandler extends ThriftRequestHandler<BFrontend.readPublisherOptions_args, BFrontend.readPublisherOptions_result> {
-        List<HostAddress> hosts;
+        List<HostProtocol> hostProtocols;
 
-        public void setDestinationHosts(List<HostAddress> newHosts) {
-            hosts = newHosts;
+        public void setDestinationHosts(List<HostProtocol> hostProtocols) {
+            this.hostProtocols = hostProtocols;
         }
 
         @Override
@@ -439,7 +438,7 @@ public class MockFrontendService {
                 res.setEntityError(new EntityNotExistsError("Entity does not exist"));
                 response = new ThriftResponse.Builder<BFrontend.readPublisherOptions_result>(request).setBody(res).setResponseCode(ResponseCode.Error).build();
             } else {
-                description.setHostAddresses(hosts);
+                description.setHostProtocols(hostProtocols);
                 description.setChecksumOption(ChecksumOption.CRC32IEEE);
                 res.setSuccess(description);
                 response = new ThriftResponse.Builder<BFrontend.readPublisherOptions_result>(request).setBody(res).build();
