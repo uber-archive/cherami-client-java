@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import com.uber.cherami.ChecksumOption;
 import com.uber.cherami.InputHostCommand;
-import com.uber.cherami.InputHostCommandType;
 import com.uber.cherami.PutMessage;
 import com.uber.cherami.PutMessageAck;
 import com.uber.cherami.client.ConnectionManager.Connection;
@@ -174,6 +173,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                 Thread.currentThread().interrupt();
             } finally {
                 drain();
+                socket.close();
             }
             logger.info("Input host connection to {} closed", uri);
         }
@@ -189,15 +189,29 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                     new TBinaryProtocol.Factory());
             List<InputHostCommand> commands = deserializer.deserialize(InputHostCommand.class, message);
             for (InputHostCommand command : commands) {
-                if (command.getType() == InputHostCommandType.ACK) {
+                switch (command.getType()) {
+                case ACK:
                     PutMessageAck ack = command.getAck();
                     ackedMessageQueue.add(ack);
                     metricsReporter.report(Counter.PUBLISHER_ACKS_IN, 1L);
-                } else if (command.getType() == InputHostCommandType.RECONFIGURE) {
+                    break;
+                case RECONFIGURE:
                     metricsReporter.report(Counter.PUBLISHER_RECONFIGS, 1L);
-                    logger.debug("ReconfigID: {}. Reconfiguration command received from InputHost.",
-                            command.getReconfigure().getUpdateUUID());
                     reconfigurable.refreshNow();
+                    logger.debug("Reconfiguration command received from input host, reconfigID={}",
+                            command.getReconfigure().getUpdateUUID());
+                    break;
+                case DRAIN:
+                    // spin up a thread to drain/close the connection
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            disconnected();
+                        }
+                    }).start();
+                    logger.debug("Drain command received from input host, reconfigID={}",
+                            command.getReconfigure().getUpdateUUID());
+                    break;
                 }
             }
         } catch (Exception e) {
@@ -246,8 +260,10 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
      */
     @Override
     public void disconnected() {
-        countDownLatch.countDown();
-        close();
+        if (isOpen()) {
+            reconfigurable.refreshNow();
+            close();
+        }
     }
 
     @Override

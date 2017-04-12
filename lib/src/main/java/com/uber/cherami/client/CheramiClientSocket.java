@@ -100,6 +100,19 @@ public class CheramiClientSocket {
         session.getRemote().sendBytes(ByteBuffer.wrap(msg));
     }
 
+    /**
+     * Close initiates graceful shutdown of the underlying websocket session.
+     */
+    public void close() {
+        try {
+            if (session != null) {
+                session.close();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing websocket connection", e);
+        }
+    }
+
     @OnWebSocketMessage
     public void processUpload(Session session, byte[] input, int arg1, int arg2) {
         connection.receiveMessage(input);
