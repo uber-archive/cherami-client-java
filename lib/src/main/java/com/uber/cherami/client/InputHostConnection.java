@@ -69,6 +69,9 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     private static final long DEFAULT_CONNECT_TIMEOUT_SECONDS = TimeUnit.MILLISECONDS
             .toSeconds(SelectorManager.DEFAULT_CONNECT_TIMEOUT) + 1;
 
+    /** Amount of time we wait for the threads to stop during shutdown. */
+    private static final long SHUTDOWN_TIMEOUT_MILLIS = 1000;
+
     private final String uri;
     private final String path;
 
@@ -177,7 +180,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
         if (isOpen.getAndSet(false)) {
             try {
                 countDownLatch.countDown();
-                if (stoppedLatch.await(1, TimeUnit.SECONDS)) {
+                if (stoppedLatch.await(SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                     // if the thread stopped successfully, then
                     // do a graceful drain of the ack queue
                     drainAcks(publisherOptions.writeTimeoutMillis);
