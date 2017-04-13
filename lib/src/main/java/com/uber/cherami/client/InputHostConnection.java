@@ -168,7 +168,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
      *
      *   (1) Stop new writes to the server
      *   (2) Drain all acks (or timeout)
-     *   (3) Stop all threads and close the socket
+     *   (3) Close the socket
      *
      * </pre>
      */
