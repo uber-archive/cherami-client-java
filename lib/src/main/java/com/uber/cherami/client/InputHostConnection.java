@@ -314,8 +314,13 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
         }
     }
 
+    /**
+     * Reads and processes upto limit acks from the ack queue.
+     *
+     * @param limit
+     *            Max number of acks to read and process.
+     */
     private void readProcessAcks(int limit) {
-        // Ack batch size messages if you can
         int numToAck = Math.min(ackedMessageQueue.size(), limit);
         for (int i = 0; i < numToAck; i++) {
             PutMessageAck ack = ackedMessageQueue.poll();
