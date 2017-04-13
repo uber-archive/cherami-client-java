@@ -161,18 +161,31 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
 
     /**
      * Closes the InputHostConnection.
-     * Calling this method multiple times has no effect
+     *
+     * The shutdown process has 3 steps:
+     *
+     * <pre>
+     *
+     *   (1) Stop new writes to the server
+     *   (2) Drain all acks (or timeout)
+     *   (3) Stop all threads and close the socket
+     *
+     * </pre>
      */
     @Override
     public void close() {
         if (isOpen.getAndSet(false)) {
             try {
                 countDownLatch.countDown();
-                stoppedLatch.await(publisherOptions.writeTimeoutMillis, TimeUnit.MILLISECONDS);
+                if (stoppedLatch.await(1, TimeUnit.SECONDS)) {
+                    // if the thread stopped successfully, then
+                    // do a graceful drain of the ack queue
+                    drainAcks(publisherOptions.writeTimeoutMillis);
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {
-                drain();
+                failAllInflight();
                 socket.close();
             }
             logger.info("Input host connection to {} closed", uri);
@@ -246,7 +259,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     /**
      * Waits for the send/receive thread to finish, then returns failure for any messages left in the queue and inflight.
      */
-    public void drain() {
+    public void failAllInflight() {
         for (String msgID : inFlightMessages.keySet()) {
             SendReceipt receipt = new SendReceipt(msgID, ReceiptStatus.ERR_CONN_CLOSED, RECEIPT_ERROR_CONN_CLOSED);
             inFlightMessages.get(msgID).setReply(receipt);
@@ -271,6 +284,52 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
         return isOpen.get();
     }
 
+    private void awaitMillis(long millis) {
+        try {
+            countDownLatch.await(millis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return;
+        }
+    }
+
+    /**
+     * Waits for acks for the inflight messages until the given timeout and
+     * returns as soon as the inflight count goes to zero.
+     *
+     * @param timeoutMillis
+     *            long representing the timeout in milliseconds
+     */
+    private void drainAcks(long timeoutMillis) {
+        long expiryMillis = System.currentTimeMillis() + timeoutMillis;
+        while (!inFlightMessages.isEmpty()) {
+            long now = System.currentTimeMillis();
+            if (now >= expiryMillis) {
+                return;
+            }
+            if (ackedMessageQueue.isEmpty()) {
+                awaitMillis(5);
+                continue;
+            }
+            readProcessAcks(Integer.MAX_VALUE);
+        }
+    }
+
+    private void readProcessAcks(int limit) {
+        // Ack batch size messages if you can
+        int numToAck = Math.min(ackedMessageQueue.size(), limit);
+        for (int i = 0; i < numToAck; i++) {
+            PutMessageAck ack = ackedMessageQueue.poll();
+            String ackId = ack.getId();
+            if (inFlightMessages.containsKey(ackId)) {
+                SendReceipt done = processAck(ack);
+                inFlightMessages.remove(ackId).setReply(done);
+                numInFlight.getAndDecrement();
+            } else {
+                logger.debug("Ignoring delayed ackId: {} Status: {}", ackId, ack.getStatus());
+            }
+        }
+    }
+
     /**
      * If messageQueue, ackedMessageQueue, and inFlightMessages are all empty, just sleep until there is work to do.
      * If there are messages in the queue and inFlightMessageSize < maxInflight, remove the first message from the queue
@@ -288,7 +347,6 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     public void run() {
 
         PutMessageRequest request = null;
-        PutMessageAck ack = null;
         final long writeTimeoutMillis = publisherOptions.writeTimeoutMillis;
         LatencyProfiler profiler = metricsReporter.createLatencyProfiler(Latency.PUBLISH_MESSAGE);
 
@@ -372,19 +430,8 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                     }
 
                     if (!ackedMessageQueue.isEmpty()) {
-                        // Ack two messages if you can
-                        int numToAck = Math.min(ackedMessageQueue.size(), 2);
-                        for (int i = 0; i < numToAck; i++) {
-                            ack = ackedMessageQueue.poll();
-                            String ackId = ack.getId();
-                            if (inFlightMessages.containsKey(ackId)) {
-                                SendReceipt done = processAck(ack);
-                                inFlightMessages.remove(ackId).setReply(done);
-                                numInFlight.getAndDecrement();
-                            } else {
-                                logger.debug("Ignoring delayed ackId: {} Status: {}", ackId, ack.getStatus());
-                            }
-                        }
+                        // process 2 acks for every message sent
+                        readProcessAcks(2);
                     }
 
                 } catch (InterruptedException e) {
