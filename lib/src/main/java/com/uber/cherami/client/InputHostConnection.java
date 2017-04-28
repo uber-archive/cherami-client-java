@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import com.uber.cherami.ChecksumOption;
 import com.uber.cherami.InputHostCommand;
-import com.uber.cherami.InputHostCommandType;
 import com.uber.cherami.PutMessage;
 import com.uber.cherami.PutMessageAck;
 import com.uber.cherami.client.ConnectionManager.Connection;
@@ -69,6 +68,9 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
      */
     private static final long DEFAULT_CONNECT_TIMEOUT_SECONDS = TimeUnit.MILLISECONDS
             .toSeconds(SelectorManager.DEFAULT_CONNECT_TIMEOUT) + 1;
+
+    /** Amount of time we wait for the threads to stop during shutdown. */
+    private static final long SHUTDOWN_TIMEOUT_MILLIS = 1000;
 
     private final String uri;
     private final String path;
@@ -162,18 +164,32 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
 
     /**
      * Closes the InputHostConnection.
-     * Calling this method multiple times has no effect
+     *
+     * The shutdown process has 3 steps:
+     *
+     * <pre>
+     *
+     *   (1) Stop new writes to the server
+     *   (2) Drain all acks (or timeout)
+     *   (3) Close the socket
+     *
+     * </pre>
      */
     @Override
     public void close() {
         if (isOpen.getAndSet(false)) {
             try {
                 countDownLatch.countDown();
-                stoppedLatch.await(publisherOptions.writeTimeoutMillis, TimeUnit.MILLISECONDS);
+                if (stoppedLatch.await(SHUTDOWN_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+                    // if the thread stopped successfully, then
+                    // do a graceful drain of the ack queue
+                    drainAcks(publisherOptions.writeTimeoutMillis);
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } finally {
-                drain();
+                failAllInflight();
+                socket.close();
             }
             logger.info("Input host connection to {} closed", uri);
         }
@@ -189,15 +205,29 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                     new TBinaryProtocol.Factory());
             List<InputHostCommand> commands = deserializer.deserialize(InputHostCommand.class, message);
             for (InputHostCommand command : commands) {
-                if (command.getType() == InputHostCommandType.ACK) {
+                switch (command.getType()) {
+                case ACK:
                     PutMessageAck ack = command.getAck();
                     ackedMessageQueue.add(ack);
                     metricsReporter.report(Counter.PUBLISHER_ACKS_IN, 1L);
-                } else if (command.getType() == InputHostCommandType.RECONFIGURE) {
+                    break;
+                case RECONFIGURE:
                     metricsReporter.report(Counter.PUBLISHER_RECONFIGS, 1L);
-                    logger.debug("ReconfigID: {}. Reconfiguration command received from InputHost.",
-                            command.getReconfigure().getUpdateUUID());
                     reconfigurable.refreshNow();
+                    logger.debug("Reconfiguration command received from input host, reconfigID={}",
+                            command.getReconfigure().getUpdateUUID());
+                    break;
+                case DRAIN:
+                    // spin up a thread to drain/close the connection
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            disconnected();
+                        }
+                    }).start();
+                    logger.debug("Drain command received from input host, reconfigID={}",
+                            command.getReconfigure().getUpdateUUID());
+                    break;
                 }
             }
         } catch (Exception e) {
@@ -232,7 +262,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     /**
      * Waits for the send/receive thread to finish, then returns failure for any messages left in the queue and inflight.
      */
-    public void drain() {
+    public void failAllInflight() {
         for (String msgID : inFlightMessages.keySet()) {
             SendReceipt receipt = new SendReceipt(msgID, ReceiptStatus.ERR_CONN_CLOSED, RECEIPT_ERROR_CONN_CLOSED);
             inFlightMessages.get(msgID).setReply(receipt);
@@ -246,13 +276,66 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
      */
     @Override
     public void disconnected() {
-        countDownLatch.countDown();
-        close();
+        if (isOpen()) {
+            reconfigurable.refreshNow();
+            close();
+        }
     }
 
     @Override
     public boolean isOpen() {
         return isOpen.get();
+    }
+
+    private void awaitMillis(long millis) {
+        try {
+            countDownLatch.await(millis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return;
+        }
+    }
+
+    /**
+     * Waits for acks for the inflight messages until the given timeout and
+     * returns as soon as the inflight count goes to zero.
+     *
+     * @param timeoutMillis
+     *            long representing the timeout in milliseconds
+     */
+    private void drainAcks(long timeoutMillis) {
+        long expiryMillis = System.currentTimeMillis() + timeoutMillis;
+        while (!inFlightMessages.isEmpty()) {
+            long now = System.currentTimeMillis();
+            if (now >= expiryMillis) {
+                return;
+            }
+            if (ackedMessageQueue.isEmpty()) {
+                awaitMillis(5);
+                continue;
+            }
+            readProcessAcks(Integer.MAX_VALUE);
+        }
+    }
+
+    /**
+     * Reads and processes upto limit acks from the ack queue.
+     *
+     * @param limit
+     *            Max number of acks to read and process.
+     */
+    private void readProcessAcks(int limit) {
+        int numToAck = Math.min(ackedMessageQueue.size(), limit);
+        for (int i = 0; i < numToAck; i++) {
+            PutMessageAck ack = ackedMessageQueue.poll();
+            String ackId = ack.getId();
+            if (inFlightMessages.containsKey(ackId)) {
+                SendReceipt done = processAck(ack);
+                inFlightMessages.remove(ackId).setReply(done);
+                numInFlight.getAndDecrement();
+            } else {
+                logger.debug("Ignoring delayed ackId: {} Status: {}", ackId, ack.getStatus());
+            }
+        }
     }
 
     /**
@@ -272,7 +355,6 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
     public void run() {
 
         PutMessageRequest request = null;
-        PutMessageAck ack = null;
         final long writeTimeoutMillis = publisherOptions.writeTimeoutMillis;
         LatencyProfiler profiler = metricsReporter.createLatencyProfiler(Latency.PUBLISH_MESSAGE);
 
@@ -356,19 +438,8 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
                     }
 
                     if (!ackedMessageQueue.isEmpty()) {
-                        // Ack two messages if you can
-                        int numToAck = Math.min(ackedMessageQueue.size(), 2);
-                        for (int i = 0; i < numToAck; i++) {
-                            ack = ackedMessageQueue.poll();
-                            String ackId = ack.getId();
-                            if (inFlightMessages.containsKey(ackId)) {
-                                SendReceipt done = processAck(ack);
-                                inFlightMessages.remove(ackId).setReply(done);
-                                numInFlight.getAndDecrement();
-                            } else {
-                                logger.debug("Ignoring delayed ackId: {} Status: {}", ackId, ack.getStatus());
-                            }
-                        }
+                        // process 2 acks for every message sent
+                        readProcessAcks(2);
                     }
 
                 } catch (InterruptedException e) {

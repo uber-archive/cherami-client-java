@@ -210,6 +210,7 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
         if (isOpen.getAndSet(false)) {
             readMessagesPump.stop();
             writeAcksPump.stop();
+            socket.close();
             logger.info("Output host connection to {} closed", wsUrl);
         }
     }
