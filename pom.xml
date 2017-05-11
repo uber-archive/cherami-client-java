@@ -25,7 +25,7 @@
 
     <groupId>com.uber.cherami</groupId>
     <artifactId>cherami-client-java-parent-pom</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0</version>
     <packaging>pom</packaging>
 
     <name>cherami</name>
@@ -204,6 +204,7 @@
     </reporting>
     
     <profiles>
+        <!-- Command example: mvn nexus-staging:release -Possrh -DstagingRepositoryId=cherami-client-java -->
         <profile>
             <id>ossrh</id>
             <activation>
@@ -221,7 +222,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.3</version>
+                        <version>1.6.7</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
