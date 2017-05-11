@@ -25,7 +25,7 @@
 
     <groupId>com.uber.cherami</groupId>
     <artifactId>cherami-client-java-parent-pom</artifactId>
-    <version>3.0.0</version>
+    <version>3.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>cherami</name>
@@ -203,8 +203,9 @@
         </plugins>
     </reporting>
     
+    <!-- Sonatype Ticket for publishing maven: https://issues.sonatype.org/browse/OSSRH-31209 -->
     <profiles>
-        <!-- Command example: mvn nexus-staging:release -Possrh -DstagingRepositoryId=cherami-client-java -->
+        <!-- Command example: mvn clean deploy -Possrh -->
         <profile>
             <id>ossrh</id>
             <activation>
