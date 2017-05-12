@@ -236,7 +236,7 @@
                     http://central.sonatype.org/pages/apache-maven.html
                     Performing a Release Deployment with the Maven Release Plugin
                     -->
-                    <plugin>
+                    <!-- <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-release-plugin</artifactId>
                         <version>2.5.3</version>
@@ -246,7 +246,7 @@
                             <releaseProfiles>ossrh</releaseProfiles>
                             <goals>deploy</goals>
                         </configuration>
-                    </plugin>
+                    </plugin> -->
 
                     <!--
                     http://central.sonatype.org/pages/apache-maven.html
