@@ -50,7 +50,7 @@ public class ClientOptions {
     /**
      * Name of the service using the cheramiClient.
      */
-    private String clientAppName = "unknown";;
+    private String clientAppName = "unknown";
 
     /**
      * Client for metrics reporting.
@@ -59,7 +59,24 @@ public class ClientOptions {
 
     private ClientOptions() {
     }
-    
+
+    /**
+     * Constructs and returns a client options object. The deployment
+     * environment is set to staging, by default. Use the Builder to to change
+     * this.
+     *
+     * @deprecated This API is deprecated in favor the the builder.
+     *
+     * @param timeout
+     *            rpc timeout value.
+     * @param timeUnit
+     *            unit for the timeout value.
+     */
+    @Deprecated
+    public ClientOptions(long timeout, TimeUnit timeUnit) {
+        this(new Builder().setRpcTimeout(timeUnit.toMillis(timeout)));
+    }
+
     private ClientOptions(Builder builder) {
         this.rpcTimeoutMillis = builder.rpcTimeoutMillis;
         this.deploymentStr = builder.deploymentStr;
@@ -81,23 +98,6 @@ public class ClientOptions {
         return clone;
     }
 
-    /**
-     * Constructs and returns a client options object. The deployment
-     * environment is set to staging, by default. Use the Builder to to change
-     * this.
-     *
-     * @deprecated This API is deprecated in favor the the builder.
-     *
-     * @param timeout
-     *            rpc timeout value.
-     * @param timeUnit
-     *            unit for the timeout value.
-     */
-    @Deprecated
-    public ClientOptions(long timeout, TimeUnit timeUnit) {
-        this(new Builder().setRpcTimeout(timeUnit.toMillis(timeout)));
-    }
-    
     /**
      * @return
      *      Returns the rpc timeout value in millis.
