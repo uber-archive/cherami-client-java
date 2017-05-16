@@ -21,25 +21,13 @@
  *******************************************************************************/
 package com.uber.cherami.client;
 
-import com.sun.javafx.font.Metrics;
-import com.uber.cherami.ChecksumOption;
-import com.uber.cherami.ConsumerMessage;
 import com.uber.cherami.PutMessage;
 import com.uber.cherami.client.metrics.DefaultMetricsClient;
 import com.uber.cherami.client.metrics.MetricsClient;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Unit tests for generating and verifying ClientOptions
