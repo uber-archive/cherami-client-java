@@ -59,7 +59,7 @@ public class ClientOptionsTest {
         Assert.assertEquals(null, options.getMetricsClient());
 
         MetricsClient metricsClient = new DefaultMetricsClient();
-        options = options.cloneWithMetricsClient(metricsClient);
+        options = options.copyWithMetricsClient(metricsClient);
         Assert.assertEquals("client1", options.getClientAppName());
         Assert.assertEquals("staging", options.getDeploymentStr());
         Assert.assertEquals(123L, options.getRpcTimeoutMillis());

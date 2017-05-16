@@ -85,11 +85,11 @@ public class ClientOptions {
     }
 
     /**
-     * Clones client options with a different metrics client to report metrics.
+     * Copy to another client options with a different metrics client to report metrics.
      * @param metricsClient metrics client
      * @return client options
      */
-    public ClientOptions cloneWithMetricsClient(MetricsClient metricsClient) {
+    public ClientOptions copyWithMetricsClient(MetricsClient metricsClient) {
         ClientOptions clone = new ClientOptions();
         clone.rpcTimeoutMillis = this.rpcTimeoutMillis;
         clone.deploymentStr = this.deploymentStr;
