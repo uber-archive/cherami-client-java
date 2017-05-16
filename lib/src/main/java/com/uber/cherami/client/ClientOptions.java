@@ -36,7 +36,7 @@ public class ClientOptions {
     /**
      * The tChannel timeout in milliseconds
      */
-    private final long rpcTimeoutMillis;
+    private long rpcTimeoutMillis = DEFAULT_RPC_TIMEOUT_MILLIS;
 
     /**
      * Deployment string that gets added
@@ -45,23 +45,19 @@ public class ClientOptions {
      * staging, then the cherami hyperbahn
      * endpoint would be cherami-frontendhost_staging.
      */
-    private final String deploymentStr;
+    private String deploymentStr = "prod";
 
     /**
      * Name of the service using the cheramiClient.
      */
-    private final String clientAppName;
+    private String clientAppName = "unknown";
 
     /**
      * Client for metrics reporting.
      */
-    private final MetricsClient metricsClient;
+    private MetricsClient metricsClient = new DefaultMetricsClient();
 
-    private ClientOptions(Builder builder) {
-        this.rpcTimeoutMillis = builder.rpcTimeoutMillis;
-        this.deploymentStr = builder.deploymentStr;
-        this.clientAppName = builder.clientAppName;
-        this.metricsClient = builder.metricsClient;
+    private ClientOptions() {
     }
 
     /**
@@ -79,6 +75,27 @@ public class ClientOptions {
     @Deprecated
     public ClientOptions(long timeout, TimeUnit timeUnit) {
         this(new Builder().setRpcTimeout(timeUnit.toMillis(timeout)));
+    }
+
+    private ClientOptions(Builder builder) {
+        this.rpcTimeoutMillis = builder.rpcTimeoutMillis;
+        this.deploymentStr = builder.deploymentStr;
+        this.clientAppName = builder.clientAppName;
+        this.metricsClient = builder.metricsClient;
+    }
+
+    /**
+     * Copy to another client options with a different metrics client to report metrics.
+     * @param metricsClient metrics client
+     * @return client options
+     */
+    public ClientOptions copyWithMetricsClient(MetricsClient metricsClient) {
+        ClientOptions clone = new ClientOptions();
+        clone.rpcTimeoutMillis = this.rpcTimeoutMillis;
+        clone.deploymentStr = this.deploymentStr;
+        clone.clientAppName = this.clientAppName;
+        clone.metricsClient = metricsClient;
+        return clone;
     }
 
     /**
