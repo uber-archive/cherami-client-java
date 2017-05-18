@@ -25,7 +25,7 @@
 
     <groupId>com.uber.cherami</groupId>
     <artifactId>cherami-client-java-parent-pom</artifactId>
-    <version>3.0.2</version>
+    <version>3.0.3</version>
     <packaging>pom</packaging>
 
     <name>cherami</name>
