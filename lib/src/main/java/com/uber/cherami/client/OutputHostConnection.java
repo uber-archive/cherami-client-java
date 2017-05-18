@@ -435,7 +435,7 @@ public class OutputHostConnection implements WebsocketConnection, Connection, Ch
                 }
             } catch (Throwable throwable) {
                 logger.error("ReadMessagesPump caught unexpected exception, remote={}", acknowledgerID, throwable);
-                metricsReporter.report(Counter.CONSUMER_MESSAGES_IN_FAILED, 1L);
+                metricsReporter.report(Counter.CONSUMER_READ_FAILED, 1L);
                 closeAndNotify();
             }
         }
