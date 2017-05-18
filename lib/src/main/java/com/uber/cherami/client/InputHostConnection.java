@@ -449,6 +449,7 @@ public class InputHostConnection implements Connection, WebsocketConnection, Run
             }
         } catch (Throwable throwable) {
             logger.error("InputHostConnection caught unexpected exception", throwable);
+            metricsReporter.report(Counter.PUBLISHER_MESSAGES_OUT_FAILED, 1L);
             stoppedLatch.countDown();
             close();
         } finally {

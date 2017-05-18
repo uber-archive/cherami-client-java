@@ -111,6 +111,8 @@ public class MetricsReporter {
         PUBLISHER_RECONFIGS("cherami.publish.reconfigure.rate"),
         /** Number of messages received by the consumer. */
         CONSUMER_MESSAGES_IN("cherami.consume.message.rate"),
+        /** Number of consume message attempts that failed or timed out */
+        CONSUMER_MESSAGES_IN_FAILED("cherami.consumer.message.failed"),
         /** Number of credits sent from the consumer to outputhosts. */
         CONSUMER_CREDITS_OUT("cherami.consume.credit.rate"),
         /** Number of credits that failed on send or timed out. */
