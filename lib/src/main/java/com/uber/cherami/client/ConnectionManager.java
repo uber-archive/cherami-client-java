@@ -531,7 +531,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
                     newAddrToConnections.remove(addr);
                 }
                 continue;
-            } 
+            }
             if (!currState.addrs.contains(addr)) {
                 // only log if an addr is discovered for the first time
                 logger.info("{}: Added endpoint, endpoint={}", name, addr);

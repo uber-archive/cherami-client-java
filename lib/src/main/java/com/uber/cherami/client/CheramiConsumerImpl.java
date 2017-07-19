@@ -269,7 +269,8 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         }
 
         if (streamingEndpoints == null || streamingEndpoints.size() == 0) {
-            logger.info("{}: readConsumerGroupHosts did not return a websocket streaming endpoint", this.consumerGroupName);
+            logger.info("{}: readConsumerGroupHosts did not return a websocket streaming endpoint",
+                    this.consumerGroupName);
             return new EndpointsInfo(0, new ArrayList<HostAddress>(), ChecksumOption.CRC32IEEE);
         }
         if (rpcPort == 0) {
