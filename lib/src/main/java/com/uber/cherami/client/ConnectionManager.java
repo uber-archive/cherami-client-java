@@ -482,8 +482,12 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      */
     private void repairConnections(Set<String> desiredEndpoints, int rpcPort, ChecksumOption checksumOption) {
 
-        if (isClosing() || desiredEndpoints.isEmpty()) {
+        if (isClosing()) {
             return;
+        }
+
+        if (desiredEndpoints.isEmpty()) {
+            logger.info("{}: Got empty desired endpoints", this.name);
         }
 
         State<T> currState = stateRef.get();
@@ -527,7 +531,7 @@ public class ConnectionManager<T extends Connection> implements Runnable {
                     newAddrToConnections.remove(addr);
                 }
                 continue;
-            }
+            } 
             if (!currState.addrs.contains(addr)) {
                 // only log if an addr is discovered for the first time
                 logger.info("{}: Added endpoint, endpoint={}", name, addr);

@@ -22,6 +22,7 @@
 package com.uber.cherami.client;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -247,27 +248,33 @@ public class CheramiConsumerImpl implements CheramiConsumer, Reconfigurable {
         int rpcPort = 0;
         List<HostAddress> streamingEndpoints = null;
 
-        for (HostProtocol protocol : result.getHostProtocols()) {
-            if (protocol.getProtocol() == Protocol.TCHANNEL) {
-                if (protocol.getHostAddresses().size() > 0) {
-                    // there is an implicit assumption that the TChannel
-                    // endpoint must be supported by all output hosts. The
-                    // tchannel/rpc port is used for sending ack/nacks.
-                    rpcPort = protocol.getHostAddresses().get(0).getPort();
+        // result.getHostProtocols() could be null/empty for multi zone standby scenario
+        List<HostProtocol> hostProtocols = result == null ? null : result.getHostProtocols();
+        if (hostProtocols != null) {
+            for (HostProtocol protocol : hostProtocols) {
+                if (protocol.getProtocol() == Protocol.TCHANNEL) {
+                    if (protocol.getHostAddresses().size() > 0) {
+                        // there is an implicit assumption that the TChannel
+                        // endpoint must be supported by all output hosts. The
+                        // tchannel/rpc port is used for sending ack/nacks.
+                        rpcPort = protocol.getHostAddresses().get(0).getPort();
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if (protocol.getProtocol() == Protocol.WS) {
-                // these endpoints must be used for data streaming
-                streamingEndpoints = protocol.getHostAddresses();
+                if (protocol.getProtocol() == Protocol.WS) {
+                    // these endpoints must be used for data streaming
+                    streamingEndpoints = protocol.getHostAddresses();
+                }
             }
         }
 
         if (streamingEndpoints == null || streamingEndpoints.size() == 0) {
-            throw new IOException("readConsumerGroupHosts failed to return a websocket streaming endpoint");
+            logger.info("{}: readConsumerGroupHosts did not return a websocket streaming endpoint", this.consumerGroupName);
+            return new EndpointsInfo(0, new ArrayList<HostAddress>(), ChecksumOption.CRC32IEEE);
         }
         if (rpcPort == 0) {
-            throw new IOException("readConsumerGroupHosts failed to return a rpc/tChannel endpoint");
+            logger.info("{}: readConsumerGroupHosts did not return a rpc/tChannel endpoint", this.consumerGroupName);
+            return new EndpointsInfo(0, new ArrayList<HostAddress>(), ChecksumOption.CRC32IEEE);
         }
 
         return new EndpointsInfo(rpcPort, streamingEndpoints, ChecksumOption.CRC32IEEE);
