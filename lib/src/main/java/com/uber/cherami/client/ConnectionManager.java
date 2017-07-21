@@ -482,8 +482,12 @@ public class ConnectionManager<T extends Connection> implements Runnable {
      */
     private void repairConnections(Set<String> desiredEndpoints, int rpcPort, ChecksumOption checksumOption) {
 
-        if (isClosing() || desiredEndpoints.isEmpty()) {
+        if (isClosing()) {
             return;
+        }
+
+        if (desiredEndpoints.isEmpty()) {
+            logger.info("{}: Got empty desired endpoints", this.name);
         }
 
         State<T> currState = stateRef.get();
