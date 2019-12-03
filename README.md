@@ -1,5 +1,6 @@
 Cherami Client for JVM 
 =======================
+(This project is deprecated and not maintained.)
 
 Java client library for publishing/consuming messages to/from [Cherami](https://eng.uber.com/cherami/).
 
